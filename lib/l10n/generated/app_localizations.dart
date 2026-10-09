@@ -371,7 +371,7 @@ abstract class AppLocalizations {
   /// No description provided for @emptyPlacesMessage.
   ///
   /// In en, this message translates to:
-  /// **'Tap the button below to save your current location.'**
+  /// **'Tap + in the top bar to save your current location.'**
   String get emptyPlacesMessage;
 
   /// No description provided for @noSearchResults.
@@ -703,6 +703,426 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'RouteNote saves your favourite places offline and syncs them to your private Google Drive. Navigation opens in the maps app you already use.'**
   String get aboutDescription;
+
+  /// No description provided for @addLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Add location'**
+  String get addLocation;
+
+  /// No description provided for @addCurrentLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Current Location'**
+  String get addCurrentLocation;
+
+  /// No description provided for @addCurrentLocationSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Use your device\'s GPS position'**
+  String get addCurrentLocationSubtitle;
+
+  /// No description provided for @aiSmartPaste.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Smart Paste'**
+  String get aiSmartPaste;
+
+  /// No description provided for @aiSmartPasteSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste a Google Maps link or coordinates'**
+  String get aiSmartPasteSubtitle;
+
+  /// No description provided for @enterCoordinates.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter Coordinates'**
+  String get enterCoordinates;
+
+  /// No description provided for @enterCoordinatesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Type latitude and longitude manually'**
+  String get enterCoordinatesSubtitle;
+
+  /// No description provided for @pinnedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Pinned'**
+  String get pinnedLabel;
+
+  /// No description provided for @lockedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Locked'**
+  String get lockedLabel;
+
+  /// No description provided for @pinToTop.
+  ///
+  /// In en, this message translates to:
+  /// **'Pin to top'**
+  String get pinToTop;
+
+  /// No description provided for @unpinFromTop.
+  ///
+  /// In en, this message translates to:
+  /// **'Unpin from top'**
+  String get unpinFromTop;
+
+  /// No description provided for @pinnedToTop.
+  ///
+  /// In en, this message translates to:
+  /// **'Pinned to top'**
+  String get pinnedToTop;
+
+  /// No description provided for @unpinnedFromTop.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed from top'**
+  String get unpinnedFromTop;
+
+  /// No description provided for @shareQr.
+  ///
+  /// In en, this message translates to:
+  /// **'Share QR code'**
+  String get shareQr;
+
+  /// No description provided for @addToHomeScreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Add shortcut to home screen'**
+  String get addToHomeScreen;
+
+  /// No description provided for @lockLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Lock location'**
+  String get lockLocation;
+
+  /// No description provided for @unlockLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock location'**
+  String get unlockLocation;
+
+  /// No description provided for @locationLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Location locked'**
+  String get locationLocked;
+
+  /// No description provided for @locationUnlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Location unlocked'**
+  String get locationUnlocked;
+
+  /// No description provided for @hideLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide location'**
+  String get hideLocation;
+
+  /// No description provided for @unhideLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Unhide location'**
+  String get unhideLocation;
+
+  /// No description provided for @locationHidden.
+  ///
+  /// In en, this message translates to:
+  /// **'Location hidden'**
+  String get locationHidden;
+
+  /// No description provided for @locationUnhidden.
+  ///
+  /// In en, this message translates to:
+  /// **'Location unhidden'**
+  String get locationUnhidden;
+
+  /// No description provided for @unlockToContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify your identity to continue'**
+  String get unlockToContinue;
+
+  /// No description provided for @unlockToNavigate.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify your identity to navigate'**
+  String get unlockToNavigate;
+
+  /// No description provided for @unlockToEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify your identity to edit'**
+  String get unlockToEdit;
+
+  /// No description provided for @unlockToUnlock.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify your identity to unlock'**
+  String get unlockToUnlock;
+
+  /// No description provided for @unlockToOpenVault.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify your identity to open the Hidden Vault'**
+  String get unlockToOpenVault;
+
+  /// No description provided for @authenticationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Authentication failed'**
+  String get authenticationFailed;
+
+  /// No description provided for @biometricsUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Biometric authentication isn\'t available on this device'**
+  String get biometricsUnavailable;
+
+  /// No description provided for @sectionPrivacy.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy & security'**
+  String get sectionPrivacy;
+
+  /// No description provided for @hiddenVault.
+  ///
+  /// In en, this message translates to:
+  /// **'Hidden Vault'**
+  String get hiddenVault;
+
+  /// No description provided for @hiddenVaultSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No hidden locations} =1{1 hidden location} other{{count} hidden locations}}'**
+  String hiddenVaultSubtitle(int count);
+
+  /// No description provided for @hiddenVaultEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No hidden locations'**
+  String get hiddenVaultEmpty;
+
+  /// No description provided for @hiddenVaultEmptyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Locations you hide will appear here, protected by your device lock.'**
+  String get hiddenVaultEmptyMessage;
+
+  /// No description provided for @qrCodeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Share via QR code'**
+  String get qrCodeTitle;
+
+  /// No description provided for @qrCodeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan to open this location in a maps app'**
+  String get qrCodeHint;
+
+  /// No description provided for @copyLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy link'**
+  String get copyLink;
+
+  /// No description provided for @linkCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Link copied to clipboard'**
+  String get linkCopied;
+
+  /// No description provided for @close.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get close;
+
+  /// No description provided for @shortcutRequested.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow the on-screen prompt to add the shortcut'**
+  String get shortcutRequested;
+
+  /// No description provided for @shortcutUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'Home screen shortcuts aren\'t supported on this device'**
+  String get shortcutUnsupported;
+
+  /// No description provided for @shortcutUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t add the shortcut'**
+  String get shortcutUnavailable;
+
+  /// No description provided for @sectionSmartInsights.
+  ///
+  /// In en, this message translates to:
+  /// **'Smart insights'**
+  String get sectionSmartInsights;
+
+  /// No description provided for @smartInsightsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Smart Insights'**
+  String get smartInsightsTitle;
+
+  /// No description provided for @smartInsightsRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh suggestions'**
+  String get smartInsightsRefresh;
+
+  /// No description provided for @smartInsightsDismiss.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get smartInsightsDismiss;
+
+  /// No description provided for @smartInsightsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Everything looks good — no suggestions right now.'**
+  String get smartInsightsEmpty;
+
+  /// No description provided for @smartInsightsCloudAi.
+  ///
+  /// In en, this message translates to:
+  /// **'Cloud AI suggestions'**
+  String get smartInsightsCloudAi;
+
+  /// No description provided for @smartInsightsCloudAiSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Let Google Gemini add optional tips. Only anonymous counts are sent — never your places, notes or coordinates.'**
+  String get smartInsightsCloudAiSubtitle;
+
+  /// No description provided for @insightWelcomeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save your first place'**
+  String get insightWelcomeTitle;
+
+  /// No description provided for @insightWelcomeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the + button to save where you are right now.'**
+  String get insightWelcomeBody;
+
+  /// No description provided for @insightNearbyDuplicatesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Group nearby places'**
+  String get insightNearbyDuplicatesTitle;
+
+  /// No description provided for @insightNearbyDuplicatesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} saved places are clustered within a few metres of each other. Consider grouping or renaming them.'**
+  String insightNearbyDuplicatesBody(int count);
+
+  /// No description provided for @insightUnorganizedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add details to your places'**
+  String get insightUnorganizedTitle;
+
+  /// No description provided for @insightUnorganizedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} places have no notes. Add a note so you can recognise them later.'**
+  String insightUnorganizedBody(int count);
+
+  /// No description provided for @insightSyncIssuesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A sync didn\'t finish'**
+  String get insightSyncIssuesTitle;
+
+  /// No description provided for @insightSyncIssuesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} recent syncs didn\'t complete. Check your connection and try again.'**
+  String insightSyncIssuesBody(int count);
+
+  /// No description provided for @insightNetworkWarningTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Possible weak network'**
+  String get insightNetworkWarningTitle;
+
+  /// No description provided for @insightNetworkWarningBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync has failed several times recently. Wait for a stable connection before the next backup.'**
+  String get insightNetworkWarningBody;
+
+  /// No description provided for @insightParseIssuesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Some locations couldn\'t be read'**
+  String get insightParseIssuesTitle;
+
+  /// No description provided for @insightParseIssuesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} pasted locations couldn\'t be parsed. Try pasting the full Google Maps link.'**
+  String insightParseIssuesBody(int count);
+
+  /// No description provided for @insightStaleBackupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Back up your places'**
+  String get insightStaleBackupTitle;
+
+  /// No description provided for @insightStaleBackupBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your last backup was {days} days ago. Sync now to keep your places safe.'**
+  String insightStaleBackupBody(int days);
+
+  /// No description provided for @insightStaleBackupNeverBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You haven\'t backed up yet. Sync now to keep your places safe.'**
+  String get insightStaleBackupNeverBody;
+
+  /// No description provided for @insightPinFavoritesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pin your favourites'**
+  String get insightPinFavoritesTitle;
+
+  /// No description provided for @insightPinFavoritesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You have {count} saved places and none pinned. Long-press a place to pin it to the top.'**
+  String insightPinFavoritesBody(int count);
+
+  /// No description provided for @insightOptimizationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep RouteNote tidy'**
+  String get insightOptimizationTitle;
+
+  /// No description provided for @insightOptimizationBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A large list loads slower. Review duplicate or unused places and remove what you no longer need.'**
+  String get insightOptimizationBody;
+
+  /// No description provided for @insightActionSyncNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync now'**
+  String get insightActionSyncNow;
 }
 
 class _AppLocalizationsDelegate

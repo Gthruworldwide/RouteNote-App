@@ -10,11 +10,15 @@ class PlaceCard extends StatelessWidget {
     required this.place,
     required this.onTap,
     required this.onNavigate,
+    this.onLongPress,
   });
 
   final Place place;
   final VoidCallback onTap;
   final VoidCallback onNavigate;
+
+  /// Opens the context menu (bottom sheet) with privacy + quick actions.
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -25,6 +29,7 @@ class PlaceCard extends StatelessWidget {
     return Card(
       child: InkWell(
         onTap: onTap,
+        onLongPress: onLongPress,
         borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
@@ -40,11 +45,35 @@ class PlaceCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Text(
-                      place.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.titleMedium,
+                    Row(
+                      children: <Widget>[
+                        if (place.isPinned) ...<Widget>[
+                          Icon(
+                            Icons.push_pin,
+                            size: 16,
+                            color: theme.colorScheme.primary,
+                            semanticLabel: l10n.pinnedLabel,
+                          ),
+                          const SizedBox(width: 4),
+                        ],
+                        if (place.isLocked) ...<Widget>[
+                          Icon(
+                            Icons.lock,
+                            size: 16,
+                            color: theme.colorScheme.primary,
+                            semanticLabel: l10n.lockedLabel,
+                          ),
+                          const SizedBox(width: 4),
+                        ],
+                        Expanded(
+                          child: Text(
+                            place.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.titleMedium,
+                          ),
+                        ),
+                      ],
                     ),
                     if (notes != null)
                       Text(

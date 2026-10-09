@@ -24,7 +24,8 @@ enum LocationEntryMode {
 /// When [place] is provided the screen edits that existing location instead of
 /// capturing a new one. When [initialLatitude]/[initialLongitude] are provided
 /// (for example from a shared map link) the screen opens in manual mode with
-/// those coordinates pre-filled.
+/// those coordinates pre-filled. [initialMode] forces a starting mode (used by
+/// the home "Add location" menu).
 class AddPlaceScreen extends ConsumerStatefulWidget {
   const AddPlaceScreen({
     super.key,
@@ -32,12 +33,14 @@ class AddPlaceScreen extends ConsumerStatefulWidget {
     this.initialLatitude,
     this.initialLongitude,
     this.initialName,
+    this.initialMode,
   });
 
   final Place? place;
   final double? initialLatitude;
   final double? initialLongitude;
   final String? initialName;
+  final LocationEntryMode? initialMode;
 
   @override
   ConsumerState<AddPlaceScreen> createState() => _AddPlaceScreenState();
@@ -86,6 +89,9 @@ class _AddPlaceScreenState extends ConsumerState<AddPlaceScreen> {
       _mode = LocationEntryMode.manual;
       _latitudeController.text = widget.initialLatitude!.toString();
       _longitudeController.text = widget.initialLongitude!.toString();
+    } else if (widget.initialMode == LocationEntryMode.manual) {
+      // Opened straight into manual entry (e.g. from the Add location menu).
+      _mode = LocationEntryMode.manual;
     } else {
       _mode = LocationEntryMode.gps;
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -158,6 +164,12 @@ class _AddPlaceScreenState extends ConsumerState<AddPlaceScreen> {
 
     if (!mounted) return;
     if (parsed == null) {
+      ref
+          .read(appHealthLoggerProvider)
+          .logParseFailure(
+            source: 'add_place',
+            shortLink: text.isNotEmpty && _parser.looksLikeShortMapLink(text),
+          );
       messenger.showSnackBar(SnackBar(content: Text(l10n.clipboardNoLocation)));
       return;
     }

@@ -148,7 +148,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get emptyPlacesTitle => 'لا توجد أماكن محفوظة بعد';
 
   @override
-  String get emptyPlacesMessage => 'اضغط الزر بالأسفل لحفظ موقعك الحالي.';
+  String get emptyPlacesMessage =>
+      'اضغط زر + في الشريط العلوي لحفظ موقعك الحالي.';
 
   @override
   String get noSearchResults => 'لا توجد أماكن مطابقة لبحثك.';
@@ -328,4 +329,244 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get aboutDescription =>
       'يحفظ روت نوت أماكنك المفضلة دون اتصال ويزامنها إلى جوجل درايف الخاص بك. يتم فتح التنقل في تطبيق الخرائط الذي تستخدمه بالفعل.';
+
+  @override
+  String get addLocation => 'إضافة موقع';
+
+  @override
+  String get addCurrentLocation => 'الموقع الحالي';
+
+  @override
+  String get addCurrentLocationSubtitle => 'استخدم موقع جهازك عبر GPS';
+
+  @override
+  String get aiSmartPaste => 'اللصق الذكي';
+
+  @override
+  String get aiSmartPasteSubtitle => 'الصق رابط خرائط جوجل أو الإحداثيات';
+
+  @override
+  String get enterCoordinates => 'إدخال الإحداثيات';
+
+  @override
+  String get enterCoordinatesSubtitle => 'اكتب خط العرض وخط الطول يدويًا';
+
+  @override
+  String get pinnedLabel => 'مثبّت';
+
+  @override
+  String get lockedLabel => 'مقفل';
+
+  @override
+  String get pinToTop => 'تثبيت في الأعلى';
+
+  @override
+  String get unpinFromTop => 'إلغاء التثبيت';
+
+  @override
+  String get pinnedToTop => 'تم التثبيت في الأعلى';
+
+  @override
+  String get unpinnedFromTop => 'تمت الإزالة من الأعلى';
+
+  @override
+  String get shareQr => 'مشاركة رمز QR';
+
+  @override
+  String get addToHomeScreen => 'إضافة اختصار إلى الشاشة الرئيسية';
+
+  @override
+  String get lockLocation => 'قفل الموقع';
+
+  @override
+  String get unlockLocation => 'إلغاء قفل الموقع';
+
+  @override
+  String get locationLocked => 'تم قفل الموقع';
+
+  @override
+  String get locationUnlocked => 'تم إلغاء قفل الموقع';
+
+  @override
+  String get hideLocation => 'إخفاء الموقع';
+
+  @override
+  String get unhideLocation => 'إظهار الموقع';
+
+  @override
+  String get locationHidden => 'تم إخفاء الموقع';
+
+  @override
+  String get locationUnhidden => 'تم إظهار الموقع';
+
+  @override
+  String get unlockToContinue => 'أكّد هويتك للمتابعة';
+
+  @override
+  String get unlockToNavigate => 'أكّد هويتك للتنقل';
+
+  @override
+  String get unlockToEdit => 'أكّد هويتك للتعديل';
+
+  @override
+  String get unlockToUnlock => 'أكّد هويتك لإلغاء القفل';
+
+  @override
+  String get unlockToOpenVault => 'أكّد هويتك لفتح الخزنة المخفية';
+
+  @override
+  String get authenticationFailed => 'فشل التحقق';
+
+  @override
+  String get biometricsUnavailable => 'التحقق الحيوي غير متاح على هذا الجهاز';
+
+  @override
+  String get sectionPrivacy => 'الخصوصية والأمان';
+
+  @override
+  String get hiddenVault => 'الخزنة المخفية';
+
+  @override
+  String hiddenVaultSubtitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count مكان مخفي',
+      many: '$count مكانًا مخفيًا',
+      few: '$count أماكن مخفية',
+      two: 'مكانان مخفيان',
+      one: 'مكان مخفي واحد',
+      zero: 'لا توجد أماكن مخفية',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get hiddenVaultEmpty => 'لا توجد أماكن مخفية';
+
+  @override
+  String get hiddenVaultEmptyMessage =>
+      'ستظهر الأماكن التي تخفيها هنا، محمية بقفل جهازك.';
+
+  @override
+  String get qrCodeTitle => 'مشاركة عبر رمز QR';
+
+  @override
+  String get qrCodeHint => 'امسح الرمز لفتح هذا الموقع في تطبيق الخرائط';
+
+  @override
+  String get copyLink => 'نسخ الرابط';
+
+  @override
+  String get linkCopied => 'تم نسخ الرابط';
+
+  @override
+  String get close => 'إغلاق';
+
+  @override
+  String get shortcutRequested => 'اتبع التنبيه على الشاشة لإضافة الاختصار';
+
+  @override
+  String get shortcutUnsupported =>
+      'اختصارات الشاشة الرئيسية غير مدعومة على هذا الجهاز';
+
+  @override
+  String get shortcutUnavailable => 'تعذّرت إضافة الاختصار';
+
+  @override
+  String get sectionSmartInsights => 'رؤى ذكية';
+
+  @override
+  String get smartInsightsTitle => 'رؤى ذكية';
+
+  @override
+  String get smartInsightsRefresh => 'تحديث الاقتراحات';
+
+  @override
+  String get smartInsightsDismiss => 'تجاهل';
+
+  @override
+  String get smartInsightsEmpty => 'كل شيء يبدو جيدًا — لا توجد اقتراحات الآن.';
+
+  @override
+  String get smartInsightsCloudAi => 'اقتراحات الذكاء السحابي';
+
+  @override
+  String get smartInsightsCloudAiSubtitle =>
+      'اسمح لجوجل Gemini بإضافة نصائح اختيارية. تُرسل أعداد مجهولة فقط — ولا تُرسل أماكنك أو ملاحظاتك أبدًا.';
+
+  @override
+  String get insightWelcomeTitle => 'احفظ مكانك الأول';
+
+  @override
+  String get insightWelcomeBody => 'اضغط زر + لحفظ موقعك الحالي.';
+
+  @override
+  String get insightNearbyDuplicatesTitle => 'جمّع الأماكن المتقاربة';
+
+  @override
+  String insightNearbyDuplicatesBody(int count) {
+    return 'يوجد $count أماكن محفوظة متقاربة جدًا. جرّب تجميعها أو إعادة تسميتها.';
+  }
+
+  @override
+  String get insightUnorganizedTitle => 'أضف تفاصيل لأماكنك';
+
+  @override
+  String insightUnorganizedBody(int count) {
+    return 'يوجد $count أماكن بدون ملاحظات. أضف ملاحظة لتتعرّف عليها لاحقًا.';
+  }
+
+  @override
+  String get insightSyncIssuesTitle => 'لم تكتمل المزامنة';
+
+  @override
+  String insightSyncIssuesBody(int count) {
+    return 'لم تكتمل $count عمليات مزامنة حديثة. تحقّق من اتصالك وحاول مجددًا.';
+  }
+
+  @override
+  String get insightNetworkWarningTitle => 'قد تكون الشبكة ضعيفة';
+
+  @override
+  String get insightNetworkWarningBody =>
+      'فشلت المزامنة عدة مرات مؤخرًا. انتظر اتصالًا مستقرًا قبل النسخ الاحتياطي التالي.';
+
+  @override
+  String get insightParseIssuesTitle => 'تعذّر قراءة بعض المواقع';
+
+  @override
+  String insightParseIssuesBody(int count) {
+    return 'تعذّر تحليل $count مواقع ملصوقة. جرّب لصق رابط خرائط جوجل الكامل.';
+  }
+
+  @override
+  String get insightStaleBackupTitle => 'انشئ نسخة احتياطية';
+
+  @override
+  String insightStaleBackupBody(int days) {
+    return 'كان آخر نسخ احتياطي قبل $days يومًا. زامن الآن للحفاظ على أماكنك.';
+  }
+
+  @override
+  String get insightStaleBackupNeverBody =>
+      'لم تنشئ نسخة احتياطية بعد. زامن الآن للحفاظ على أماكنك.';
+
+  @override
+  String get insightPinFavoritesTitle => 'ثبّت أماكنك المفضلة';
+
+  @override
+  String insightPinFavoritesBody(int count) {
+    return 'لديك $count أماكن محفوظة ولا يوجد أي مكان مثبّت. اضغط مطوّلًا على مكان لتثبيته في الأعلى.';
+  }
+
+  @override
+  String get insightOptimizationTitle => 'حافظ على ترتيب روت نوت';
+
+  @override
+  String get insightOptimizationBody =>
+      'القائمة الكبيرة تُحمّل أبطأ. راجع الأماكن المكررة أو غير المستخدمة واحذف ما لا تحتاجه.';
+
+  @override
+  String get insightActionSyncNow => 'زامن الآن';
 }

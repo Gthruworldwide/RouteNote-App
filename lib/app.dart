@@ -6,10 +6,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'l10n/generated/app_localizations.dart';
 import 'src/core/navigation/app_navigator.dart';
 import 'src/core/theme/app_theme.dart';
+import 'src/data/models/place.dart';
 import 'src/features/add_place/add_place_screen.dart';
 import 'src/features/home/home_screen.dart';
 import 'src/providers/app_providers.dart';
+import 'src/services/app_health_logger.dart';
+import 'src/services/home_shortcut_service.dart';
 import 'src/services/location_parser.dart';
+import 'src/services/lock_gate.dart';
 import 'src/services/share_intent_service.dart';
 
 /// Root widget of RouteNote.
@@ -29,30 +33,38 @@ class _RouteNoteAppState extends ConsumerState<RouteNoteApp>
   static const LocationParser _parser = LocationParser();
 
   StreamSubscription<String>? _shareSubscription;
+  StreamSubscription<String>? _shortcutSubscription;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    ref.read(appHealthLoggerProvider).log(HealthEventType.appLaunch);
     _listenForSharedLocations();
+    _listenForShortcuts();
   }
 
   @override
   void dispose() {
     _shareSubscription?.cancel();
+    _shortcutSubscription?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    final AppHealthLogger health = ref.read(appHealthLoggerProvider);
     if (state == AppLifecycleState.resumed) {
+      health.log(HealthEventType.appResume);
       // Sync on resume is always silent: the user never sees a dialog, and a
       // signed-out device simply skips (SyncOutcome.skippedNotSignedIn).
       ref.read(syncControllerProvider.notifier).syncSilently();
       // The user may have toggled GPS or granted permission in the system
       // settings while the app was backgrounded.
       ref.read(locationStatusProvider.notifier).refresh();
+    } else if (state == AppLifecycleState.paused) {
+      health.log(HealthEventType.appPause);
     }
   }
 
@@ -76,6 +88,12 @@ class _RouteNoteAppState extends ConsumerState<RouteNoteApp>
     if (!mounted) return;
 
     if (parsed == null) {
+      ref
+          .read(appHealthLoggerProvider)
+          .logParseFailure(
+            source: 'share',
+            shortLink: _parser.looksLikeShortMapLink(raw),
+          );
       _showShareMessage();
       return;
     }
@@ -116,6 +134,76 @@ class _RouteNoteAppState extends ConsumerState<RouteNoteApp>
     ScaffoldMessenger.maybeOf(context)?.showSnackBar(
       SnackBar(content: Text(AppLocalizations.of(context).shareNoLocation)),
     );
+  }
+
+  /// Handles home-screen / dynamic shortcuts that launch the app for a place.
+  void _listenForShortcuts() {
+    final HomeShortcutService service = ref.read(homeShortcutServiceProvider);
+    service.initialize();
+    _shortcutSubscription = service.placeTaps().listen(_openShortcut);
+    service.initialPlaceId().then((String? id) {
+      if (id != null && id.isNotEmpty) _openShortcut(id);
+    });
+
+    // Keep the platform's dynamic shortcuts aligned with pinned places.
+    ref.listenManual<AsyncValue<List<Place>>>(
+      placesProvider,
+      (AsyncValue<List<Place>>? previous, AsyncValue<List<Place>> next) {
+        final List<Place>? places = next.value;
+        if (places != null) service.syncDynamicShortcuts(places);
+      },
+      fireImmediately: true,
+    );
+  }
+
+  /// Navigates straight to a place (1-tap shortcut), verifying identity first
+  /// when the place is locked.
+  Future<void> _openShortcut(String id) async {
+    Place? place;
+    final List<Place>? places = ref.read(placesProvider).value;
+    if (places != null) {
+      for (final Place candidate in places) {
+        if (candidate.id == id) {
+          place = candidate;
+          break;
+        }
+      }
+    }
+    place ??= await ref.read(placeRepositoryProvider).getById(id);
+    if (place == null || !mounted) return;
+
+    if (place.isLocked) {
+      final BuildContext? rootContext = appNavigatorKey.currentContext;
+      if (rootContext != null && rootContext.mounted) {
+        final AppLocalizations l10n = AppLocalizations.of(rootContext);
+        final ScaffoldMessengerState? messenger = ScaffoldMessenger.maybeOf(
+          rootContext,
+        );
+        if (messenger != null) {
+          final bool allowed = await ensureUnlocked(
+            ref,
+            l10n: l10n,
+            reason: l10n.unlockToNavigate,
+            messenger: messenger,
+          );
+          if (!allowed) return;
+        }
+      } else {
+        return;
+      }
+    }
+
+    final bool launched = await ref
+        .read(navigationServiceProvider)
+        .navigate(place.latitude, place.longitude);
+    if (!launched && mounted) {
+      final BuildContext? rootContext2 = appNavigatorKey.currentContext;
+      if (rootContext2 != null && rootContext2.mounted) {
+        ScaffoldMessenger.maybeOf(rootContext2)?.showSnackBar(
+          SnackBar(content: Text(AppLocalizations.of(rootContext2).locationUnavailable)),
+        );
+      }
+    }
   }
 
   @override

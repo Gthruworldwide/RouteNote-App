@@ -41,20 +41,54 @@ class GoogleAuthService implements AuthService {
   bool get isSignedIn => _account != null;
 
   @override
-  Future<AuthUser?> restoreSession() async {
+  Future<AuthUser?> signInSilently() async {
     await initialize();
     try {
-      final Future<GoogleSignInAccount?>? attempt = GoogleSignIn.instance
-          .attemptLightweightAuthentication();
-      if (attempt == null) return null;
-      final GoogleSignInAccount? account = await attempt;
-      if (account == null) return null;
+      final GoogleSignInAccount? account =
+          await GoogleSignIn.instance.signInSilently();
+      if (account == null) {
+        final Future<GoogleSignInAccount?>? attempt = GoogleSignIn.instance
+            .attemptLightweightAuthentication();
+        if (attempt != null) {
+          final GoogleSignInAccount? lightweight = await attempt;
+          if (lightweight != null) {
+            _account = lightweight;
+            _user = _toUser(lightweight);
+            await _validateDriveAccess(lightweight);
+            return _user;
+          }
+        }
+        return null;
+      }
       _account = account;
       _user = _toUser(account);
+
+      // Validate (and, when possible, refresh) the Drive token in the
+      // background. The user is already on the Home screen, so this must never
+      // prompt: only a non-interactive check is attempted.
+      await _validateDriveAccess(account);
       return _user;
-    } on GoogleSignInException {
-      // Silent restore failed; the user can sign in explicitly.
+    } on GoogleSignInException catch (e) {
+      debugPrint(
+        'RouteNote GoogleSignIn.signInSilently failed: '
+        'code=${e.code.name} description=${e.description}',
+      );
       return null;
+    }
+  }
+
+  /// Best-effort, non-interactive Drive authorization check. Never prompts the
+  /// user and never throws; a missing token simply leaves the session as-is.
+  Future<void> _validateDriveAccess(GoogleSignInAccount account) async {
+    try {
+      await account.authorizationClient.authorizationForScopes(
+        AppConfig.driveScopes,
+      );
+    } on GoogleSignInException catch (e) {
+      debugPrint(
+        'RouteNote Drive token validation failed: '
+        'code=${e.code.name} description=${e.description}',
+      );
     }
   }
 

@@ -9,6 +9,7 @@ import 'package:routenote/app.dart';
 import 'package:routenote/src/data/local/hive_database.dart';
 import 'package:routenote/src/data/remote/auth_service.dart';
 import 'package:routenote/src/providers/app_providers.dart';
+import 'package:routenote/src/services/app_health_logger.dart';
 
 /// Stand-in for [GoogleAuthService] so widget tests never touch the
 /// `google_sign_in` platform channel.
@@ -23,7 +24,7 @@ class _FakeAuthService implements AuthService {
   Future<void> initialize() async {}
 
   @override
-  Future<AuthUser?> restoreSession() async => null;
+  Future<AuthUser?> signInSilently() async => null;
 
   @override
   Future<AuthUser> signIn() {
@@ -67,6 +68,10 @@ void main() {
         overrides: [
           hiveDatabaseProvider.overrideWithValue(database),
           authServiceProvider.overrideWithValue(_FakeAuthService()),
+          // The widget tree runs inside a FakeAsync zone, where a real Hive
+          // write can never complete (and would deadlock `box.close()` in
+          // tearDown). Keep the health log in memory for these tests.
+          appHealthLoggerProvider.overrideWithValue(AppHealthLogger(null)),
         ],
         child: const RouteNoteApp(),
       ),
@@ -80,13 +85,16 @@ void main() {
     await pumpApp(tester);
 
     // App shell is visible.
-    expect(find.byType(FloatingActionButton), findsOneWidget);
     expect(find.byType(TextField), findsOneWidget);
+    expect(find.byIcon(Icons.add), findsOneWidget);
+    expect(find.byIcon(Icons.settings_outlined), findsOneWidget);
 
     // A saved place was never added, so the empty state is shown.
     expect(find.byIcon(Icons.place_outlined), findsWidgets);
-    expect(find.byIcon(Icons.cloud_sync_outlined), findsOneWidget);
-    expect(find.byIcon(Icons.settings_outlined), findsOneWidget);
+
+    // The Smart Insights agent surfaces its onboarding suggestion.
+    expect(find.text('Smart Insights'), findsOneWidget);
+    expect(find.byIcon(Icons.auto_awesome), findsOneWidget);
   });
 
   testWidgets('a saved place appears in the list', (WidgetTester tester) async {

@@ -1,0 +1,220 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../data/models/place.dart';
+import '../../../../l10n/generated/app_localizations.dart';
+import '../../../providers/app_providers.dart';
+import '../../../services/lock_gate.dart';
+
+
+/// A result the sheet asks the caller to perform (needs a screen-level context).
+enum PlaceActionResult { shareQr }
+
+/// Opens the long-press context menu for [place] as a modal bottom sheet.
+///
+/// Returns [PlaceActionResult.shareQr] when the user asked for a QR code, which
+/// the caller must display (the sheet closes before the dialog opens).
+Future<PlaceActionResult?> showPlaceActionsSheet(
+  BuildContext context,
+  Place place,
+) {
+  return showModalBottomSheet<PlaceActionResult>(
+    context: context,
+    showDragHandle: true,
+    builder: (BuildContext context) => _PlaceActionsSheet(place: place),
+  );
+}
+
+/// Bottom sheet listing privacy features and quick actions for a location.
+class _PlaceActionsSheet extends ConsumerWidget {
+  const _PlaceActionsSheet({required this.place});
+
+  final Place place;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+
+    return SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 4, 24, 8),
+            child: Text(
+              place.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ),
+          _ActionTile(
+            icon: Icons.directions,
+            label: l10n.navigate,
+            onTap: () => _navigate(context, ref, l10n),
+          ),
+          _ActionTile(
+            icon: place.isPinned
+                ? Icons.push_pin_outlined
+                : Icons.push_pin,
+            label: place.isPinned ? l10n.unpinFromTop : l10n.pinToTop,
+            onTap: () => _togglePin(context, ref, l10n),
+          ),
+          _ActionTile(
+            icon: Icons.qr_code_2,
+            label: l10n.shareQr,
+            onTap: () => _showQr(context),
+          ),
+          _ActionTile(
+            icon: Icons.add_to_home_screen,
+            label: l10n.addToHomeScreen,
+            onTap: () => _addShortcut(context, ref, l10n),
+          ),
+          const Divider(height: 8),
+          _ActionTile(
+            icon: place.isLocked ? Icons.lock_open : Icons.lock_outline,
+            label: place.isLocked ? l10n.unlockLocation : l10n.lockLocation,
+            onTap: () => _toggleLock(context, ref, l10n),
+          ),
+          if (!place.isHidden)
+            _ActionTile(
+              icon: Icons.visibility_off_outlined,
+              label: l10n.hideLocation,
+              onTap: () => _hide(context, ref, l10n),
+            ),
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+
+  // --- Actions -------------------------------------------------------------
+
+  Future<void> _navigate(
+    BuildContext context,
+    WidgetRef ref,
+    AppLocalizations l10n,
+  ) async {
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    Navigator.of(context).pop();
+
+    if (place.isLocked) {
+      final bool allowed = await ensureUnlocked(
+        ref,
+        l10n: l10n,
+        reason: l10n.unlockToNavigate,
+        messenger: messenger,
+      );
+      if (!allowed) return;
+    }
+
+    final bool launched = await ref
+        .read(navigationServiceProvider)
+        .navigate(place.latitude, place.longitude);
+    if (!launched) {
+      messenger.showSnackBar(SnackBar(content: Text(l10n.locationUnavailable)));
+    }
+  }
+
+  Future<void> _togglePin(
+    BuildContext context,
+    WidgetRef ref,
+    AppLocalizations l10n,
+  ) async {
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    final bool pinned = !place.isPinned;
+    Navigator.of(context).pop();
+    await ref.read(placesProvider.notifier).setPinned(place.id, pinned);
+    messenger.showSnackBar(
+      SnackBar(content: Text(pinned ? l10n.pinnedToTop : l10n.unpinnedFromTop)),
+    );
+  }
+
+  void _showQr(BuildContext context) {
+    Navigator.of(context).pop(PlaceActionResult.shareQr);
+  }
+
+  Future<void> _addShortcut(
+    BuildContext context,
+    WidgetRef ref,
+    AppLocalizations l10n,
+  ) async {
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    Navigator.of(context).pop();
+
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      messenger.showSnackBar(SnackBar(content: Text(l10n.shortcutUnsupported)));
+      return;
+    }
+
+    final bool requested = await ref
+        .read(homeShortcutServiceProvider)
+        .pinToHomeScreen(place);
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(requested ? l10n.shortcutRequested : l10n.shortcutUnavailable),
+      ),
+    );
+  }
+
+  Future<void> _toggleLock(
+    BuildContext context,
+    WidgetRef ref,
+    AppLocalizations l10n,
+  ) async {
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    final bool locked = !place.isLocked;
+    Navigator.of(context).pop();
+
+    // Turning the lock *on* is free; turning it *off* must be verified.
+    if (!locked) {
+      final bool allowed = await ensureUnlocked(
+        ref,
+        l10n: l10n,
+        reason: l10n.unlockToUnlock,
+        messenger: messenger,
+      );
+      if (!allowed) return;
+    }
+
+    await ref.read(placesProvider.notifier).setLocked(place.id, locked);
+    messenger.showSnackBar(
+      SnackBar(content: Text(locked ? l10n.locationLocked : l10n.locationUnlocked)),
+    );
+  }
+
+  Future<void> _hide(
+    BuildContext context,
+    WidgetRef ref,
+    AppLocalizations l10n,
+  ) async {
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    Navigator.of(context).pop();
+    await ref.read(placesProvider.notifier).setHidden(place.id, true);
+    messenger.showSnackBar(SnackBar(content: Text(l10n.locationHidden)));
+  }
+}
+
+/// A single row in the context menu.
+class _ActionTile extends StatelessWidget {
+  const _ActionTile({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: Icon(icon),
+      title: Text(label),
+      onTap: onTap,
+    );
+  }
+}

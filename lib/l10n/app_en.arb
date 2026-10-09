@@ -62,7 +62,7 @@
   },
 
   "emptyPlacesTitle": "No saved places yet",
-  "emptyPlacesMessage": "Tap the button below to save your current location.",
+  "emptyPlacesMessage": "Tap + in the top bar to save your current location.",
   "noSearchResults": "No places match your search.",
 
   "settingsTitle": "Settings",
@@ -149,5 +149,118 @@
 
   "about": "About",
   "version": "Version",
-  "aboutDescription": "RouteNote saves your favourite places offline and syncs them to your private Google Drive. Navigation opens in the maps app you already use."
+  "aboutDescription": "RouteNote saves your favourite places offline and syncs them to your private Google Drive. Navigation opens in the maps app you already use.",
+
+  "addLocation": "Add location",
+  "addCurrentLocation": "Current Location",
+  "addCurrentLocationSubtitle": "Use your device's GPS position",
+  "aiSmartPaste": "AI Smart Paste",
+  "aiSmartPasteSubtitle": "Paste a Google Maps link or coordinates",
+  "enterCoordinates": "Enter Coordinates",
+  "enterCoordinatesSubtitle": "Type latitude and longitude manually",
+
+  "pinnedLabel": "Pinned",
+  "lockedLabel": "Locked",
+  "pinToTop": "Pin to top",
+  "unpinFromTop": "Unpin from top",
+  "pinnedToTop": "Pinned to top",
+  "unpinnedFromTop": "Removed from top",
+  "shareQr": "Share QR code",
+  "addToHomeScreen": "Add shortcut to home screen",
+  "lockLocation": "Lock location",
+  "unlockLocation": "Unlock location",
+  "locationLocked": "Location locked",
+  "locationUnlocked": "Location unlocked",
+  "hideLocation": "Hide location",
+  "unhideLocation": "Unhide location",
+  "locationHidden": "Location hidden",
+  "locationUnhidden": "Location unhidden",
+
+  "unlockToContinue": "Verify your identity to continue",
+  "unlockToNavigate": "Verify your identity to navigate",
+  "unlockToEdit": "Verify your identity to edit",
+  "unlockToUnlock": "Verify your identity to unlock",
+  "unlockToOpenVault": "Verify your identity to open the Hidden Vault",
+  "authenticationFailed": "Authentication failed",
+  "biometricsUnavailable": "Biometric authentication isn't available on this device",
+
+  "sectionPrivacy": "Privacy & security",
+  "hiddenVault": "Hidden Vault",
+  "hiddenVaultSubtitle": "{count, plural, =0{No hidden locations} =1{1 hidden location} other{{count} hidden locations}}",
+  "@hiddenVaultSubtitle": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "hiddenVaultEmpty": "No hidden locations",
+  "hiddenVaultEmptyMessage": "Locations you hide will appear here, protected by your device lock.",
+
+  "qrCodeTitle": "Share via QR code",
+  "qrCodeHint": "Scan to open this location in a maps app",
+  "copyLink": "Copy link",
+  "linkCopied": "Link copied to clipboard",
+  "close": "Close",
+
+  "shortcutRequested": "Follow the on-screen prompt to add the shortcut",
+  "shortcutUnsupported": "Home screen shortcuts aren't supported on this device",
+  "shortcutUnavailable": "Couldn't add the shortcut",
+
+  "sectionSmartInsights": "Smart insights",
+  "smartInsightsTitle": "Smart Insights",
+  "smartInsightsRefresh": "Refresh suggestions",
+  "smartInsightsDismiss": "Dismiss",
+  "smartInsightsEmpty": "Everything looks good — no suggestions right now.",
+  "smartInsightsCloudAi": "Cloud AI suggestions",
+  "smartInsightsCloudAiSubtitle": "Let Google Gemini add optional tips. Only anonymous counts are sent — never your places, notes or coordinates.",
+
+  "insightWelcomeTitle": "Save your first place",
+  "insightWelcomeBody": "Tap the + button to save where you are right now.",
+  "insightNearbyDuplicatesTitle": "Group nearby places",
+  "insightNearbyDuplicatesBody": "{count} saved places are clustered within a few metres of each other. Consider grouping or renaming them.",
+  "@insightNearbyDuplicatesBody": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "insightUnorganizedTitle": "Add details to your places",
+  "insightUnorganizedBody": "{count} places have no notes. Add a note so you can recognise them later.",
+  "@insightUnorganizedBody": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "insightSyncIssuesTitle": "A sync didn't finish",
+  "insightSyncIssuesBody": "{count} recent syncs didn't complete. Check your connection and try again.",
+  "@insightSyncIssuesBody": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "insightNetworkWarningTitle": "Possible weak network",
+  "insightNetworkWarningBody": "Sync has failed several times recently. Wait for a stable connection before the next backup.",
+  "insightParseIssuesTitle": "Some locations couldn't be read",
+  "insightParseIssuesBody": "{count} pasted locations couldn't be parsed. Try pasting the full Google Maps link.",
+  "@insightParseIssuesBody": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "insightStaleBackupTitle": "Back up your places",
+  "insightStaleBackupBody": "Your last backup was {days} days ago. Sync now to keep your places safe.",
+  "@insightStaleBackupBody": {
+    "placeholders": {
+      "days": { "type": "int" }
+    }
+  },
+  "insightStaleBackupNeverBody": "You haven't backed up yet. Sync now to keep your places safe.",
+  "insightPinFavoritesTitle": "Pin your favourites",
+  "insightPinFavoritesBody": "You have {count} saved places and none pinned. Long-press a place to pin it to the top.",
+  "@insightPinFavoritesBody": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "insightOptimizationTitle": "Keep RouteNote tidy",
+  "insightOptimizationBody": "A large list loads slower. Review duplicate or unused places and remove what you no longer need.",
+  "insightActionSyncNow": "Sync now"
 }

@@ -19,7 +19,8 @@ android {
         applicationId = "com.routenote.routenote"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        // local_auth and quick_actions require API 24+.
+        minSdk = maxOf(flutter.minSdkVersion, 24)
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

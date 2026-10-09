@@ -31,7 +31,7 @@ void backgroundSyncDispatcher() {
 
       final AuthService auth = GoogleAuthService();
       await auth.initialize();
-      await auth.restoreSession();
+      await auth.signInSilently();
       if (!auth.isSignedIn) return true; // Nothing to do offline.
 
       final SyncRepository sync = SyncRepository(

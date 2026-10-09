@@ -45,8 +45,12 @@ abstract class AuthService {
 
   bool get isSignedIn;
 
-  /// Recovers a previously authenticated session without showing UI.
-  Future<AuthUser?> restoreSession();
+  /// Recovers a previously authenticated session *silently* (no UI) and, in
+  /// the background, validates/refreshes the Drive token.
+  ///
+  /// Returns null when there is no account to recover and never throws for the
+  /// "no account" case, so callers can treat it as a best-effort restore.
+  Future<AuthUser?> signInSilently();
 
   /// Interactive sign-in plus Drive app-data authorization.
   Future<AuthUser> signIn();

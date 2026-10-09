@@ -1,18 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models/place.dart';
 import '../../data/remote/auth_service.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../providers/app_providers.dart';
+import '../../services/location_parser.dart';
+import '../../services/lock_gate.dart';
 import '../../services/navigation_service.dart';
 import '../add_place/add_place_screen.dart';
 import '../place_detail/place_detail_screen.dart';
 import '../settings/settings_screen.dart';
 import 'widgets/location_status_chip.dart';
+import 'widgets/place_actions_sheet.dart';
 import 'widgets/place_card.dart';
+import 'widgets/qr_code_dialog.dart';
+import 'widgets/smart_insights_card.dart';
 
-/// The main screen: search, list, FAB capture, sync + settings actions.
+/// The main screen: search, list, add-location menu, sync + settings actions.
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
@@ -21,8 +27,26 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
+  static const LocationParser _parser = LocationParser();
+
   final TextEditingController _searchController = TextEditingController();
   String _query = '';
+
+  /// Guards the one-time "sync on open" check for a cached session.
+  bool _checkedInitialSession = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Measure time-to-first-frame for the primary screen.
+    final Stopwatch stopwatch = Stopwatch()..start();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref
+          .read(appHealthLoggerProvider)
+          .logUiLatency('home', stopwatch.elapsed);
+    });
+  }
 
   @override
   void dispose() {
@@ -30,13 +54,127 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     super.dispose();
   }
 
-  void _openAddPlace(BuildContext context) {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute<void>(builder: (_) => const AddPlaceScreen()));
+  void _openAddPlace({
+    double? latitude,
+    double? longitude,
+    String? name,
+    LocationEntryMode? mode,
+  }) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => AddPlaceScreen(
+          initialLatitude: latitude,
+          initialLongitude: longitude,
+          initialName: name,
+          initialMode: mode,
+        ),
+      ),
+    );
   }
 
-  void _openPlace(BuildContext context, Place place) {
+  /// Opens the "Add location" bottom sheet with the three capture options.
+  Future<void> _showAddLocationOptions() async {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (BuildContext sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 4, 24, 8),
+              child: Text(
+                l10n.addLocation,
+                style: Theme.of(sheetContext).textTheme.titleMedium,
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.my_location),
+              title: Text(l10n.addCurrentLocation),
+              subtitle: Text(l10n.addCurrentLocationSubtitle),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                _openAddPlace(mode: LocationEntryMode.gps);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.auto_awesome),
+              title: Text(l10n.aiSmartPaste),
+              subtitle: Text(l10n.aiSmartPasteSubtitle),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                _handleSmartPaste();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.edit_location_alt_outlined),
+              title: Text(l10n.enterCoordinates),
+              subtitle: Text(l10n.enterCoordinatesSubtitle),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                _openAddPlace(mode: LocationEntryMode.manual);
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Reads the clipboard, parses a map link / raw coordinates and pre-fills the
+  /// Add Location form.
+  Future<void> _handleSmartPaste() async {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+
+    String text = '';
+    try {
+      final ClipboardData? data = await Clipboard.getData(Clipboard.kTextPlain);
+      text = data?.text?.trim() ?? '';
+    } catch (_) {
+      text = '';
+    }
+
+    ParsedLocation? parsed;
+    if (text.isNotEmpty) {
+      parsed = _parser.parse(text);
+      if (parsed == null && _parser.looksLikeShortMapLink(text)) {
+        parsed = await _parser.resolveShortLink(text);
+      }
+    }
+
+    if (!mounted) return;
+    if (parsed == null) {
+      ref
+          .read(appHealthLoggerProvider)
+          .logParseFailure(
+            source: 'clipboard',
+            shortLink: text.isNotEmpty && _parser.looksLikeShortMapLink(text),
+          );
+      messenger.showSnackBar(SnackBar(content: Text(l10n.clipboardNoLocation)));
+      return;
+    }
+
+    _openAddPlace(
+      latitude: parsed.latitude,
+      longitude: parsed.longitude,
+      name: parsed.name ?? _parser.guessName(text),
+    );
+  }
+
+  void _openPlace(BuildContext context, Place place) async {
+    if (place.isLocked) {
+      final bool allowed = await ensureUnlocked(
+        ref,
+        l10n: AppLocalizations.of(context),
+        reason: AppLocalizations.of(context).unlockToContinue,
+        messenger: ScaffoldMessenger.of(context),
+      );
+      if (!allowed || !context.mounted) return;
+    }
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => PlaceDetailScreen(placeId: place.id),
@@ -45,6 +183,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Future<void> _navigateToPlace(Place place) async {
+    if (place.isLocked) {
+      final bool allowed = await ensureUnlocked(
+        ref,
+        l10n: AppLocalizations.of(context),
+        reason: AppLocalizations.of(context).unlockToNavigate,
+        messenger: ScaffoldMessenger.of(context),
+      );
+      if (!allowed) return;
+    }
     final NavigationService nav = ref.read(navigationServiceProvider);
     final bool launched = await nav.navigate(place.latitude, place.longitude);
     if (!launched && mounted) {
@@ -56,24 +203,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
   }
 
-  /// Manual "Sync" action (AppBar): when signed out, triggers Google sign-in
-  /// first — on success the [authProvider] listener below runs the backup
-  /// automatically; when already signed in, syncs immediately.
-  Future<void> _handleSyncTap() async {
-    final AuthUser? user = ref.read(authProvider).value;
-    if (user != null) {
-      await ref.read(syncControllerProvider.notifier).syncNow();
-      return;
-    }
-
-    await ref.read(authProvider.notifier).signIn();
-    if (!mounted) return;
-    if (ref.read(authProvider).value == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context).syncSignInRequired),
-        ),
-      );
+  /// Opens the long-press context menu, then shows a QR dialog if requested.
+  Future<void> _showPlaceActions(Place place) async {
+    final PlaceActionResult? result = await showPlaceActionsSheet(
+      context,
+      place,
+    );
+    if (result == PlaceActionResult.shareQr && mounted) {
+      await showPlaceQrDialog(context, place);
     }
   }
 
@@ -87,32 +224,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       if (next.isLoading) return;
       final AuthUser? user = next.value;
       if (user != null && prev?.value == null) {
-        ref.read(syncControllerProvider.notifier).syncNow();
+        _scheduleSyncOnOpen();
       }
     });
 
+    // A cached session is already signed in on the very first frame, so the
+    // listener above never sees the null -> user transition. Kick off the
+    // "sync on open" once for that case.
+    if (!_checkedInitialSession) {
+      _checkedInitialSession = true;
+      if (ref.read(authProvider).value != null) {
+        _scheduleSyncOnOpen();
+      }
+    }
+
     final AsyncValue<List<Place>> placesAsync = ref.watch(placesProvider);
-    final SyncState sync = ref.watch(syncControllerProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.placesTitle),
         actions: <Widget>[
-          if (sync.isSyncing)
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: Center(
-                child: SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              ),
-            ),
           IconButton(
-            tooltip: l10n.syncNow,
-            onPressed: sync.isSyncing ? null : _handleSyncTap,
-            icon: const Icon(Icons.cloud_sync_outlined),
+            tooltip: l10n.addLocation,
+            onPressed: _showAddLocationOptions,
+            icon: const Icon(Icons.add),
           ),
           IconButton(
             tooltip: l10n.settingsTitle,
@@ -122,11 +257,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             icon: const Icon(Icons.settings_outlined),
           ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _openAddPlace(context),
-        icon: const Icon(Icons.my_location),
-        label: Text(l10n.addPlace),
       ),
       body: Column(
         children: <Widget>[
@@ -153,6 +283,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           ),
           const LocationStatusChip(),
+          const SmartInsightsCard(),
           Expanded(child: _buildBody(placesAsync, l10n)),
         ],
       ),
@@ -170,7 +301,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         title: l10n.errorGeneric,
         message: '$error',
       ),
-      data: (List<Place> places) {
+      data: (List<Place> allPlaces) {
+        // Hidden places live only in the Settings → Hidden Vault.
+        final List<Place> places = allPlaces
+            .where((Place place) => !place.isHidden)
+            .toList();
+
         if (places.isEmpty && _query.isEmpty) {
           return RefreshIndicator(
             onRefresh: _refresh,
@@ -191,6 +327,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         p.notes.toLowerCase().contains(_query),
                   )
                   .toList();
+
+        // Pinned places first, then newest → oldest.
+        filtered.sort((Place a, Place b) {
+          if (a.isPinned != b.isPinned) return a.isPinned ? -1 : 1;
+          return b.timestamp.compareTo(a.timestamp);
+        });
 
         if (filtered.isEmpty) {
           return RefreshIndicator(
@@ -216,12 +358,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 place: place,
                 onTap: () => _openPlace(context, place),
                 onNavigate: () => _navigateToPlace(place),
+                onLongPress: () => _showPlaceActions(place),
               );
             },
           ),
         );
       },
     );
+  }
+
+  /// Backs up local data once a session is available, deferred out of build so
+  /// no provider state is modified while the widget tree is building.
+  void _scheduleSyncOnOpen() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(syncControllerProvider.notifier).syncNow();
+    });
   }
 
   /// Pull-to-refresh performs a sync, then the places list is reloaded.

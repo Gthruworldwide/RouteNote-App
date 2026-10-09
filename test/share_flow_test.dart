@@ -9,6 +9,7 @@ import 'package:routenote/src/data/local/hive_database.dart';
 import 'package:routenote/src/data/remote/auth_service.dart';
 import 'package:routenote/src/features/add_place/add_place_screen.dart';
 import 'package:routenote/src/providers/app_providers.dart';
+import 'package:routenote/src/services/app_health_logger.dart';
 import 'package:routenote/src/services/share_intent_service.dart';
 
 /// Sign-in is irrelevant for the share flow; never touch the platform channel.
@@ -23,7 +24,7 @@ class _FakeAuthService implements AuthService {
   Future<void> initialize() async {}
 
   @override
-  Future<AuthUser?> restoreSession() async => null;
+  Future<AuthUser?> signInSilently() async => null;
 
   @override
   Future<AuthUser> signIn() {
@@ -84,6 +85,8 @@ void main() {
           hiveDatabaseProvider.overrideWithValue(database),
           authServiceProvider.overrideWithValue(_FakeAuthService()),
           shareIntentServiceProvider.overrideWithValue(shareIntentService),
+          // See widget_test.dart: avoid real Hive writes inside FakeAsync.
+          appHealthLoggerProvider.overrideWithValue(AppHealthLogger(null)),
         ],
         child: const RouteNoteApp(),
       ),

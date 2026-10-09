@@ -149,7 +149,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get emptyPlacesMessage =>
-      'Tap the button below to save your current location.';
+      'Tap + in the top bar to save your current location.';
 
   @override
   String get noSearchResults => 'No places match your search.';
@@ -333,4 +333,246 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get aboutDescription =>
       'RouteNote saves your favourite places offline and syncs them to your private Google Drive. Navigation opens in the maps app you already use.';
+
+  @override
+  String get addLocation => 'Add location';
+
+  @override
+  String get addCurrentLocation => 'Current Location';
+
+  @override
+  String get addCurrentLocationSubtitle => 'Use your device\'s GPS position';
+
+  @override
+  String get aiSmartPaste => 'AI Smart Paste';
+
+  @override
+  String get aiSmartPasteSubtitle => 'Paste a Google Maps link or coordinates';
+
+  @override
+  String get enterCoordinates => 'Enter Coordinates';
+
+  @override
+  String get enterCoordinatesSubtitle => 'Type latitude and longitude manually';
+
+  @override
+  String get pinnedLabel => 'Pinned';
+
+  @override
+  String get lockedLabel => 'Locked';
+
+  @override
+  String get pinToTop => 'Pin to top';
+
+  @override
+  String get unpinFromTop => 'Unpin from top';
+
+  @override
+  String get pinnedToTop => 'Pinned to top';
+
+  @override
+  String get unpinnedFromTop => 'Removed from top';
+
+  @override
+  String get shareQr => 'Share QR code';
+
+  @override
+  String get addToHomeScreen => 'Add shortcut to home screen';
+
+  @override
+  String get lockLocation => 'Lock location';
+
+  @override
+  String get unlockLocation => 'Unlock location';
+
+  @override
+  String get locationLocked => 'Location locked';
+
+  @override
+  String get locationUnlocked => 'Location unlocked';
+
+  @override
+  String get hideLocation => 'Hide location';
+
+  @override
+  String get unhideLocation => 'Unhide location';
+
+  @override
+  String get locationHidden => 'Location hidden';
+
+  @override
+  String get locationUnhidden => 'Location unhidden';
+
+  @override
+  String get unlockToContinue => 'Verify your identity to continue';
+
+  @override
+  String get unlockToNavigate => 'Verify your identity to navigate';
+
+  @override
+  String get unlockToEdit => 'Verify your identity to edit';
+
+  @override
+  String get unlockToUnlock => 'Verify your identity to unlock';
+
+  @override
+  String get unlockToOpenVault =>
+      'Verify your identity to open the Hidden Vault';
+
+  @override
+  String get authenticationFailed => 'Authentication failed';
+
+  @override
+  String get biometricsUnavailable =>
+      'Biometric authentication isn\'t available on this device';
+
+  @override
+  String get sectionPrivacy => 'Privacy & security';
+
+  @override
+  String get hiddenVault => 'Hidden Vault';
+
+  @override
+  String hiddenVaultSubtitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count hidden locations',
+      one: '1 hidden location',
+      zero: 'No hidden locations',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get hiddenVaultEmpty => 'No hidden locations';
+
+  @override
+  String get hiddenVaultEmptyMessage =>
+      'Locations you hide will appear here, protected by your device lock.';
+
+  @override
+  String get qrCodeTitle => 'Share via QR code';
+
+  @override
+  String get qrCodeHint => 'Scan to open this location in a maps app';
+
+  @override
+  String get copyLink => 'Copy link';
+
+  @override
+  String get linkCopied => 'Link copied to clipboard';
+
+  @override
+  String get close => 'Close';
+
+  @override
+  String get shortcutRequested =>
+      'Follow the on-screen prompt to add the shortcut';
+
+  @override
+  String get shortcutUnsupported =>
+      'Home screen shortcuts aren\'t supported on this device';
+
+  @override
+  String get shortcutUnavailable => 'Couldn\'t add the shortcut';
+
+  @override
+  String get sectionSmartInsights => 'Smart insights';
+
+  @override
+  String get smartInsightsTitle => 'Smart Insights';
+
+  @override
+  String get smartInsightsRefresh => 'Refresh suggestions';
+
+  @override
+  String get smartInsightsDismiss => 'Dismiss';
+
+  @override
+  String get smartInsightsEmpty =>
+      'Everything looks good — no suggestions right now.';
+
+  @override
+  String get smartInsightsCloudAi => 'Cloud AI suggestions';
+
+  @override
+  String get smartInsightsCloudAiSubtitle =>
+      'Let Google Gemini add optional tips. Only anonymous counts are sent — never your places, notes or coordinates.';
+
+  @override
+  String get insightWelcomeTitle => 'Save your first place';
+
+  @override
+  String get insightWelcomeBody =>
+      'Tap the + button to save where you are right now.';
+
+  @override
+  String get insightNearbyDuplicatesTitle => 'Group nearby places';
+
+  @override
+  String insightNearbyDuplicatesBody(int count) {
+    return '$count saved places are clustered within a few metres of each other. Consider grouping or renaming them.';
+  }
+
+  @override
+  String get insightUnorganizedTitle => 'Add details to your places';
+
+  @override
+  String insightUnorganizedBody(int count) {
+    return '$count places have no notes. Add a note so you can recognise them later.';
+  }
+
+  @override
+  String get insightSyncIssuesTitle => 'A sync didn\'t finish';
+
+  @override
+  String insightSyncIssuesBody(int count) {
+    return '$count recent syncs didn\'t complete. Check your connection and try again.';
+  }
+
+  @override
+  String get insightNetworkWarningTitle => 'Possible weak network';
+
+  @override
+  String get insightNetworkWarningBody =>
+      'Sync has failed several times recently. Wait for a stable connection before the next backup.';
+
+  @override
+  String get insightParseIssuesTitle => 'Some locations couldn\'t be read';
+
+  @override
+  String insightParseIssuesBody(int count) {
+    return '$count pasted locations couldn\'t be parsed. Try pasting the full Google Maps link.';
+  }
+
+  @override
+  String get insightStaleBackupTitle => 'Back up your places';
+
+  @override
+  String insightStaleBackupBody(int days) {
+    return 'Your last backup was $days days ago. Sync now to keep your places safe.';
+  }
+
+  @override
+  String get insightStaleBackupNeverBody =>
+      'You haven\'t backed up yet. Sync now to keep your places safe.';
+
+  @override
+  String get insightPinFavoritesTitle => 'Pin your favourites';
+
+  @override
+  String insightPinFavoritesBody(int count) {
+    return 'You have $count saved places and none pinned. Long-press a place to pin it to the top.';
+  }
+
+  @override
+  String get insightOptimizationTitle => 'Keep RouteNote tidy';
+
+  @override
+  String get insightOptimizationBody =>
+      'A large list loads slower. Review duplicate or unused places and remove what you no longer need.';
+
+  @override
+  String get insightActionSyncNow => 'Sync now';
 }

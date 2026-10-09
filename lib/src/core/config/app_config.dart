@@ -57,4 +57,47 @@ class AppConfig {
 
   /// Unique name used by the background task scheduler.
   static const String backgroundSyncUniqueName = 'routenote.periodicSync';
+
+  // ---------------------------------------------------------------------------
+  // Monitoring & recommendation agent (optional, privacy-safe)
+  // ---------------------------------------------------------------------------
+
+  /// Optional Google Gemini API key for the cloud recommendation engine.
+  ///
+  /// The app is **offline-first and zero-backend by default**: when this is
+  /// empty (or the user turns cloud AI off in Settings), the agent still runs
+  /// using the fully local, rule-based engine. Provide a restricted key with:
+  ///
+  /// ```sh
+  /// flutter run --dart-define=GEMINI_API_KEY=xxxx
+  /// ```
+  ///
+  /// Only anonymous aggregate metrics are ever sent (counts and structural
+  /// summaries — never place names, notes, or coordinates).
+  static const String geminiApiKey = String.fromEnvironment('GEMINI_API_KEY');
+
+  /// Gemini model used for recommendations. Override with
+  /// `--dart-define=GEMINI_MODEL=gemini-2.0-flash`.
+  static const String geminiModel = String.fromEnvironment(
+    'GEMINI_MODEL',
+    defaultValue: 'gemini-2.0-flash',
+  );
+
+  /// Whether a Gemini API key was compiled in.
+  static bool get isGeminiConfigured => geminiApiKey.isNotEmpty;
+
+  /// How often the recommendation agent re-runs while the app stays open.
+  static const Duration agentRefreshInterval = Duration(hours: 6);
+
+  /// Network timeout for a single cloud recommendation request.
+  static const Duration agentRequestTimeout = Duration(seconds: 12);
+
+  /// Maximum number of insights shown at once (the rest are queued away).
+  static const int maxAgentInsights = 3;
+
+  /// Key used to persist the bounded health-event log in the settings box.
+  static const String healthLogKey = 'health_events';
+
+  /// Maximum number of health events kept on device.
+  static const int healthLogCapacity = 200;
 }

@@ -119,6 +119,11 @@ is the operating system's local storage plus the user's own Google Drive.
 - 🧭 Navigation delegated to Google Maps / Waze via deep links — no in-app maps.
 - 🌐 Arabic / English UI (`flutter_localizations` + ARB files).
 - 🌗 Light & dark themes.
+- 🤖 **Smart Insights** — a privacy-first monitoring & recommendation agent that
+  watches local app health (lifecycle, sync failures, location-parsing failures,
+  UI latency) and the shape of the user's data, then suggests tidy-ups, sync
+  reminders and optimisations. Works fully offline with a local rule engine; an
+  optional Google Gemini layer adds localized tips when a key is configured.
 
 ## User flow
 
@@ -148,6 +153,7 @@ is the operating system's local storage plus the user's own Google Drive.
 | Drive API | `googleapis` Drive v3 with a custom `http.BaseClient` injecting the Bearer token |
 | HTTP | `http` |
 | Background work | `workmanager` 24h periodic task (`ExistingPeriodicWorkPolicy.update`) |
+| Recommendations | Local rule engine (always on) + optional Google Gemini via `http` (`--dart-define=GEMINI_API_KEY`) |
 | Location | `geolocator` |
 | Deep links | `url_launcher` (Google Maps, `geo`, `google.navigation`, Waze, `https`) |
 | Share target | `receive_sharing_intent` (text/links shared into the app) |
@@ -170,6 +176,11 @@ to avoid conflict resolution complexity).
    the local database (used when installing on a new phone).
 3. If not signed in → the sync is skipped silently.
 
+> **Signing out does not delete your places.** Sign-out only clears the Google
+> session from the device; saved locations stay in the local Hive database
+> (offline-first, zero data loss). A later sign-in keeps the local data as the
+> source of truth; restore only happens on a device whose database is empty.
+
 Syncs are triggered:
 
 - when a Google session is restored on app open;
@@ -181,6 +192,61 @@ Syncs are triggered:
 
 A manual **Restore from Google Drive** action is also available in Settings (with
 a confirmation dialog).
+
+## Monitoring & recommendation agent (Smart Insights)
+
+RouteNote ships a lightweight, privacy-first "AI assistant" that watches the
+app's local health and the shape of the user's data, then surfaces contextual
+suggestions in a subtle **Smart Insights** card on Home and a **Smart insights**
+section in Settings.
+
+```
+lib/src/services/
+  app_health_logger.dart      # bounded local event/health log (Hive-backed)
+  local_insight_engine.dart   # pure, offline rule engine (no network)
+  gemini_client.dart          # optional Gemini generateContent client
+  agent_service.dart          # facade: local engine + optional cloud layer
+```
+
+### What is logged
+
+`AppHealthLogger` keeps a bounded (200-event) ring buffer of app
+launch/resume/pause, sync started/succeeded/failed/skipped, place
+saved/deleted, location-parse failures (including short-link resolution) and
+Home UI latency. Events never leave the device; the agent only consumes
+aggregate `HealthSummary` counts.
+
+### What is suggested (local, offline)
+
+| Signal | Suggestion |
+| --- | --- |
+| Two or more places within ~80 m | Group / rename nearby places |
+| Places with no notes | Add details so they are recognisable |
+| Repeated sync failures | Possible weak network / retry sync |
+| Repeated parse failures | Paste the full Google Maps link |
+| Signed in but backup > 7 days old | Back up now |
+| 12+ places, none pinned | Pin favourites |
+| Very large list | Keep the list tidy |
+
+Insights are dismissible (persisted), prioritised by severity, and capped to the
+top three so the card stays subtle.
+
+### Optional cloud layer (Gemini)
+
+The local engine always runs and needs no account. If the app is built with a
+restricted Gemini key:
+
+```sh
+flutter run \
+  --dart-define=GEMINI_API_KEY=xxxx \
+  --dart-define=GEMINI_MODEL=gemini-2.0-flash
+```
+
+…the agent additionally asks Gemini for up to three localized suggestions and
+merges them with the local ones. **Only anonymous aggregate metrics** (counts
+such as `savedPlaces`, `nearbyClusters`, `recentSyncFailures`, `lastBackupDaysAgo`)
+are sent — never place names, notes, ids or coordinates. Cloud AI can be turned
+off at any time in **Settings → Smart insights**.
 
 ## Backup format
 
@@ -221,13 +287,15 @@ lib/
       remote/                      # auth_service, google_auth_service, drive_service
       repositories/                # PlaceRepository, SyncRepository
     services/                      # location, navigation, location_parser,
-                                   #   share_intent, background sync scheduler
+                                   #   share_intent, background sync scheduler,
+                                   #   app_health_logger, local_insight_engine,
+                                   #   gemini_client, agent_service
     providers/app_providers.dart   # all Riverpod providers & notifiers
     features/
-      home/                        # list + search + FAB + empty state
+      home/                        # list + search + AppBar actions + Smart Insights
       add_place/                   # GPS or pasted/manual coordinates, name & notes
       place_detail/                # view / navigate / delete
-      settings/                    # sign-in, sync, restore, language, theme
+      settings/                    # sign-in, sync, restore, language, theme, agent
 test/                              # Hive-backed widget tests + parser/share tests
 ios/ShareExtension/                # iOS share-extension templates + README
 scripts/run_dev.ps1                # Windows helper: run with real OAuth IDs
@@ -340,6 +408,8 @@ injected with `--dart-define` (never hardcoded):
 | --- | --- | --- |
 | `GOOGLE_SERVER_CLIENT_ID` | Android (for sign-in) | `serverClientId` in `GoogleSignIn.instance.initialize` |
 | `GOOGLE_IOS_CLIENT_ID` | iOS (for sign-in) | `clientId` in `GoogleSignIn.instance.initialize` |
+| `GEMINI_API_KEY` | No — optional | Enables the optional cloud recommendation layer (`GeminiClient`); without it the agent runs fully offline |
+| `GEMINI_MODEL` | No — defaults to `gemini-2.0-flash` | Model used by the optional cloud recommendation layer |
 
 ## Localization
 

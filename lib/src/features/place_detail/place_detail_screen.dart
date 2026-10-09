@@ -6,6 +6,7 @@ import '../../core/utils/date_formats.dart';
 import '../../data/models/place.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../providers/app_providers.dart';
+import '../../services/lock_gate.dart';
 import '../add_place/add_place_screen.dart';
 
 /// Shows a saved location with navigation, copy, edit and delete actions.
@@ -124,9 +125,8 @@ class PlaceDetailScreen extends ConsumerWidget {
           children: <Widget>[
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: () => ref
-                    .read(navigationServiceProvider)
-                    .openInGoogleMaps(place.latitude, place.longitude),
+                onPressed: () =>
+                    _openInGoogleMaps(context, ref, l10n, place),
                 icon: const Icon(Icons.map_outlined),
                 label: Text(l10n.openInGoogleMaps),
               ),
@@ -134,9 +134,7 @@ class PlaceDetailScreen extends ConsumerWidget {
             const SizedBox(width: 12),
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: () => ref
-                    .read(navigationServiceProvider)
-                    .navigateWithWaze(place.latitude, place.longitude),
+                onPressed: () => _openInWaze(context, ref, l10n, place),
                 icon: const Icon(Icons.near_me_outlined),
                 label: Text(l10n.openInWaze),
               ),
@@ -158,7 +156,20 @@ class PlaceDetailScreen extends ConsumerWidget {
     );
   }
 
-  void _openEdit(BuildContext context, WidgetRef ref, Place place) {
+  Future<void> _openEdit(
+    BuildContext context,
+    WidgetRef ref,
+    Place place,
+  ) async {
+    if (place.isLocked) {
+      final bool allowed = await ensureUnlocked(
+        ref,
+        l10n: AppLocalizations.of(context),
+        reason: AppLocalizations.of(context).unlockToEdit,
+        messenger: ScaffoldMessenger.of(context),
+      );
+      if (!allowed || !context.mounted) return;
+    }
     Navigator.of(context).push(
       MaterialPageRoute<void>(builder: (_) => AddPlaceScreen(place: place)),
     );
@@ -181,12 +192,61 @@ class PlaceDetailScreen extends ConsumerWidget {
     Place place,
   ) async {
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    if (place.isLocked) {
+      final bool allowed = await ensureUnlocked(
+        ref,
+        l10n: l10n,
+        reason: l10n.unlockToNavigate,
+        messenger: messenger,
+      );
+      if (!allowed) return;
+    }
     final bool launched = await ref
         .read(navigationServiceProvider)
         .navigate(place.latitude, place.longitude);
     if (!launched) {
       messenger.showSnackBar(SnackBar(content: Text(l10n.locationUnavailable)));
     }
+  }
+
+  Future<void> _openInGoogleMaps(
+    BuildContext context,
+    WidgetRef ref,
+    AppLocalizations l10n,
+    Place place,
+  ) async {
+    if (place.isLocked) {
+      final bool allowed = await ensureUnlocked(
+        ref,
+        l10n: l10n,
+        reason: l10n.unlockToNavigate,
+        messenger: ScaffoldMessenger.of(context),
+      );
+      if (!allowed) return;
+    }
+    await ref
+        .read(navigationServiceProvider)
+        .openInGoogleMaps(place.latitude, place.longitude);
+  }
+
+  Future<void> _openInWaze(
+    BuildContext context,
+    WidgetRef ref,
+    AppLocalizations l10n,
+    Place place,
+  ) async {
+    if (place.isLocked) {
+      final bool allowed = await ensureUnlocked(
+        ref,
+        l10n: l10n,
+        reason: l10n.unlockToNavigate,
+        messenger: ScaffoldMessenger.of(context),
+      );
+      if (!allowed) return;
+    }
+    await ref
+        .read(navigationServiceProvider)
+        .navigateWithWaze(place.latitude, place.longitude);
   }
 
   Future<void> _confirmDelete(

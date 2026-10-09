@@ -5,10 +5,14 @@ import 'package:geolocator/geolocator.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../core/config/app_config.dart';
 import '../../core/utils/date_formats.dart';
+import '../../data/models/place.dart';
 import '../../data/remote/auth_service.dart';
 import '../../data/repositories/sync_repository.dart';
 import '../../providers/app_providers.dart';
 import '../../services/location_service.dart';
+import '../../services/lock_gate.dart';
+import '../home/widgets/smart_insights_card.dart';
+import 'hidden_vault_screen.dart';
 
 /// Settings, grouped into cards: account, location services, sync & backup,
 /// preferences and about.
@@ -25,6 +29,11 @@ class SettingsScreen extends ConsumerWidget {
     final AsyncValue<LocationStatus> location = ref.watch(
       locationStatusProvider,
     );
+    final int hiddenCount = ref
+        .watch(placesProvider)
+        .value
+        ?.where((Place place) => place.isHidden)
+        .length ?? 0;
 
     ref.listen<SyncState>(syncControllerProvider, (prev, next) {
       if (prev?.status != SyncStatus.syncing) return;
@@ -67,8 +76,16 @@ class SettingsScreen extends ConsumerWidget {
             child: _buildSyncCard(context, ref, l10n, sync),
           ),
           _SettingsSection(
+            title: l10n.sectionPrivacy,
+            child: _buildPrivacyCard(context, ref, l10n, hiddenCount),
+          ),
+          _SettingsSection(
             title: l10n.sectionPreferences,
             child: _buildPreferencesCard(context, ref, l10n, locale, themeMode),
+          ),
+          _SettingsSection(
+            title: l10n.sectionSmartInsights,
+            child: _buildAgentCard(context, ref, l10n),
           ),
           _SettingsSection(
             title: l10n.about,
@@ -286,6 +303,48 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
+  // --- Privacy & security ----------------------------------------------------
+
+  Widget _buildPrivacyCard(
+    BuildContext context,
+    WidgetRef ref,
+    AppLocalizations l10n,
+    int hiddenCount,
+  ) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      leading: const Icon(Icons.lock_outline),
+      title: Text(l10n.hiddenVault),
+      subtitle: Text(l10n.hiddenVaultSubtitle(hiddenCount)),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () => _openHiddenVault(context, ref, l10n),
+    );
+  }
+
+  Future<void> _openHiddenVault(
+    BuildContext context,
+    WidgetRef ref,
+    AppLocalizations l10n,
+  ) async {
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    final NavigatorState navigator = Navigator.of(context);
+
+    // Unhiding must never trap the user's data, so an unverifiable device is
+    // allowed through rather than locking the vault forever.
+    final bool allowed = await ensureUnlocked(
+      ref,
+      l10n: l10n,
+      reason: l10n.unlockToOpenVault,
+      messenger: messenger,
+      allowWhenUnavailable: true,
+    );
+    if (!allowed) return;
+
+    await navigator.push(
+      MaterialPageRoute<void>(builder: (_) => const HiddenVaultScreen()),
+    );
+  }
+
   // --- Preferences -----------------------------------------------------------
 
   Widget _buildPreferencesCard(
@@ -365,6 +424,63 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ],
           ),
+        ],
+      ),
+    );
+  }
+
+  // --- Smart insights --------------------------------------------------------
+
+  Widget _buildAgentCard(
+    BuildContext context,
+    WidgetRef ref,
+    AppLocalizations l10n,
+  ) {
+    final ThemeData theme = Theme.of(context);
+    final bool cloudAvailable = AppConfig.isGeminiConfigured;
+    final bool cloudEnabled = ref.watch(cloudAiEnabledProvider);
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Icon(
+                Icons.auto_awesome,
+                size: 20,
+                color: theme.colorScheme.primary,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  l10n.smartInsightsTitle,
+                  style: theme.textTheme.titleSmall,
+                ),
+              ),
+              IconButton(
+                tooltip: l10n.smartInsightsRefresh,
+                onPressed: () => ref.read(agentProvider.notifier).refresh(),
+                icon: const Icon(Icons.refresh, size: 20),
+                visualDensity: VisualDensity.compact,
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          const SmartInsightsList(showWhenEmpty: true),
+          if (cloudAvailable) ...<Widget>[
+            const Divider(height: 24),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              secondary: const Icon(Icons.cloud_outlined),
+              title: Text(l10n.smartInsightsCloudAi),
+              subtitle: Text(l10n.smartInsightsCloudAiSubtitle),
+              value: cloudEnabled,
+              onChanged: (bool value) => ref
+                  .read(cloudAiEnabledProvider.notifier)
+                  .setEnabled(value),
+            ),
+          ],
         ],
       ),
     );

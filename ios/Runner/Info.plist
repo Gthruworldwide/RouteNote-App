@@ -49,6 +49,8 @@
 	<true/>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>RouteNote uses your location to save the coordinates of places you capture.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>RouteNote uses Face ID to protect locked locations and the Hidden Vault.</string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>comgooglemaps</string>
