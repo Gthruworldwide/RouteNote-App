@@ -14,8 +14,10 @@ No Firebase. No custom server. No database to operate. Your data is yours.
 ## Table of contents
 
 - [Overview](#overview)
+- [Design principles (strict rules)](#design-principles-strict-rules)
 - [Zero-backend architecture (Google Drive sync)](#zero-backend-architecture-google-drive-sync)
 - [Features](#features)
+- [User flow](#user-flow)
 - [Tech stack](#tech-stack)
 - [How sync works](#how-sync-works)
 - [Backup format](#backup-format)
@@ -45,6 +47,25 @@ have to pay for and maintain.
   OAuth happens directly between the app and Google; the backup is a single JSON
   file in the user's Drive.
 - **Bilingual.** Full English / Arabic UI, no hardcoded strings.
+
+## Design principles (strict rules)
+
+These are non-negotiable constraints for the project:
+
+1. **Zero external backend.** No Firebase, AWS, or any custom backend servers for
+   database storage.
+2. **Offline-first.** All data is saved locally on the device using a fast local
+   database (`Hive`). The app is fully functional with no network.
+3. **Cloud sync, the "WhatsApp model".** Backup and cross-device sync serialise
+   the local database into a JSON file that is synced silently to the user's
+   Google Drive, using the hidden `drive.appdata` scope for app-specific
+   storage. There is no bespoke sync service.
+4. **Bilingual by construction.** The UI supports **Arabic (`ar`)** and
+   **English (`en`)** natively via `flutter_localizations` and `.arb` files. UI
+   strings are never hardcoded.
+5. **Navigation is delegated.** The app ships no turn-by-turn navigation engine;
+   it sends coordinates to Google Maps or Waze through intents / deep links
+   (`url_launcher`).
 
 ## Zero-backend architecture (Google Drive sync)
 
@@ -92,6 +113,20 @@ is the operating system's local storage plus the user's own Google Drive.
 - 🧭 Navigation delegated to Google Maps / Waze via deep links — no in-app maps.
 - 🌐 Arabic / English UI (`flutter_localizations` + ARB files).
 - 🌗 Light & dark themes.
+
+## User flow
+
+1. **Capture location (one tap).** The user opens the app and presses the FAB.
+   The app grabs the exact GPS coordinates; the user adds a **Name** and
+   **Notes**, and the place is saved to the local database.
+2. **Search & retrieve.** Saved places are listed newest-first and can be
+   filtered with the search bar.
+3. **Navigate.** Tapping a place opens its detail screen; **Navigate** hands the
+   coordinates to Google Maps (or Waze) for routing.
+4. **Auto-sync.** On sign-in / app open / resume, the local JSON overrides the
+   Google Drive JSON backup.
+5. **Restore.** Signing in on a new device (with an empty local database) fetches
+   the JSON from Drive and populates the local database.
 
 ## Tech stack
 
@@ -324,14 +359,23 @@ Already committed — the notes below explain what is in place.
 
 ## Roadmap
 
+RouteNote follows the **project master roadmap**: an offline-first, zero-backend
+location-saving and navigation app for Android and iOS.
+
+**Tech requirements.** Flutter (latest stable) · Riverpod · Hive · `geolocator` ·
+`url_launcher` · `google_sign_in` + `googleapis` (Drive API v3) ·
+`flutter_localizations` + `intl`.
+
+**Delivery phases**
+
 | Phase | Scope | Status |
 | --- | --- | --- |
 | **1 — Local-first core** | Riverpod scaffolding, Hive CRUD, Home (search + FAB + empty state), Add Place (name/notes), Place Detail | ✅ Done |
 | **2 — Location capture** | `geolocator` with graceful permission handling (granted / denied / disabled / error) | ✅ Done |
-| **3 — Navigation deep links** | Google Maps / Waze via `url_launcher` intents only | ✅ Done |
+| **3 — Navigation delegation** | Google Maps / Waze via `url_launcher` intents only — no in-app turn-by-turn | ✅ Done |
 | **4 — Zero-backend sync** | Google Sign-In (v7), Drive v3 `appDataFolder`, device-wins backup/restore, auto-sync on open & resume, 24h background task | ✅ Done |
 | **5 — Polish & release** | EN/AR localization, light/dark themes, launcher icons, MIT license, README | ✅ Done |
-| **Future** | Optional timestamp-based merge, multi-device conflict UI, import/export, widget shortcut for parking | 💡 Ideas |
+| **Future** | Optional timestamp-based merge, multi-device conflict UI, import/export, parking shortcut widget | 💡 Ideas |
 
 ## License
 
