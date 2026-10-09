@@ -103,6 +103,12 @@ is the operating system's local storage plus the user's own Google Drive.
 ## Features
 
 - 📍 Save the current GPS location with a name and notes.
+- 📋 **Paste a location** from the clipboard — Google Maps links (full and
+  short), `geo:` URIs, and raw `lat, lng` pairs are parsed automatically.
+- ✏️ **Custom coordinates** — switch to a manual latitude/longitude entry with
+  range validation instead of using the current GPS fix.
+- 🔗 **Share target** — share a place from Google Maps / WhatsApp / a browser
+  and RouteNote opens the save screen pre-filled.
 - 💾 Fully offline-first — all data lives in a local Hive database.
 - ☁️ One-tap backup/sync to the user's **private** Google Drive app-data folder.
 - 🔒 Only the `drive.appdata` scope is ever requested.
@@ -119,6 +125,9 @@ is the operating system's local storage plus the user's own Google Drive.
 1. **Capture location (one tap).** The user opens the app and presses the FAB.
    The app grabs the exact GPS coordinates; the user adds a **Name** and
    **Notes**, and the place is saved to the local database.
+   - **Or save a location you are not at.** Use **Custom coordinates** to type
+     latitude/longitude, **Paste location from clipboard** to import a map link
+     or a `lat, lng` pair, or **share** a place from another app.
 2. **Search & retrieve.** Saved places are listed newest-first and can be
    filtered with the search bar.
 3. **Navigate.** Tapping a place opens its detail screen; **Navigate** hands the
@@ -141,6 +150,7 @@ is the operating system's local storage plus the user's own Google Drive.
 | Background work | `workmanager` 24h periodic task (`ExistingPeriodicWorkPolicy.update`) |
 | Location | `geolocator` |
 | Deep links | `url_launcher` (Google Maps, `geo`, `google.navigation`, Waze, `https`) |
+| Share target | `receive_sharing_intent` (text/links shared into the app) |
 | Localization | `flutter_localizations` + `intl` + ARB (`app_en.arb`, `app_ar.arb`) |
 | IDs | `uuid` |
 | Icons | `flutter_launcher_icons` (generated from `assets/app_icon.png`) |
@@ -202,6 +212,7 @@ lib/
   src/
     core/
       config/app_config.dart       # --dart-define OAuth IDs, scope, file/box names
+      navigation/app_navigator.dart # global navigator key (share intents)
       theme/app_theme.dart         # light & dark themes
       utils/date_formats.dart
     data/
@@ -209,14 +220,16 @@ lib/
       local/                       # HiveDatabase, PlaceLocalDataSource, SettingsRepository
       remote/                      # auth_service, google_auth_service, drive_service
       repositories/                # PlaceRepository, SyncRepository
-    services/                      # location, navigation, background sync scheduler
+    services/                      # location, navigation, location_parser,
+                                   #   share_intent, background sync scheduler
     providers/app_providers.dart   # all Riverpod providers & notifiers
     features/
       home/                        # list + search + FAB + empty state
-      add_place/                   # capture GPS, name & notes
+      add_place/                   # GPS or pasted/manual coordinates, name & notes
       place_detail/                # view / navigate / delete
       settings/                    # sign-in, sync, restore, language, theme
-test/widget_test.dart              # Hive-backed widget smoke tests
+test/                              # Hive-backed widget tests + parser/share tests
+ios/ShareExtension/                # iOS share-extension templates + README
 scripts/run_dev.ps1                # Windows helper: run with real OAuth IDs
 assets/app_icon.png                # source icon for flutter_launcher_icons
 assets/app_icon_animated.gif       # bundled animated asset
@@ -348,13 +361,19 @@ Already committed — the notes below explain what is in place.
 
 - **Android** (`android/app/src/main/AndroidManifest.xml`):
   `INTERNET`, `ACCESS_COARSE_LOCATION`, `ACCESS_FINE_LOCATION`,
-  `RECEIVE_BOOT_COMPLETED`, and a `<queries>` block for the `geo`,
-  `google.navigation`, and `https` intents.
+  `RECEIVE_BOOT_COMPLETED`, a `<queries>` block for the `geo`,
+  `google.navigation`, and `https` intents, and `ACTION_SEND` /
+  `ACTION_SEND_MULTIPLE` share filters for `text/*`.
+- **Share target:** Android is fully wired. On iOS the `receive_sharing_intent`
+  plugin also needs a Share Extension **target**, which can only be created in
+  Xcode — ready-to-use templates and step-by-step instructions live in
+  `ios/ShareExtension/README.md`.
 - **iOS** (`ios/Runner/Info.plist`): `NSLocationWhenInUseUsageDescription`,
   `LSApplicationQueriesSchemes` (`comgooglemaps`, `googlemaps`, `waze`), and
   `CFBundleURLTypes` containing the reversed iOS client ID
   (`com.googleusercontent.apps.<ios-client-id>`) so the OAuth flow can return to
-  the app.
+  the app, plus the `ShareMedia-$(PRODUCT_BUNDLE_IDENTIFIER)` scheme used by the
+  share extension.
 - **Application ID / bundle ID:** `com.routenote.routenote` on both platforms.
 - **Icons:** generated with `flutter_launcher_icons` from `assets/app_icon.png`.
 

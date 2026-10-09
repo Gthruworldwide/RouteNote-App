@@ -15,10 +15,11 @@
 ## 2. Core Features & User Flow
 
 1. **Capture Location (One-Tap):** User opens the app, presses a FAB. The app grabs exact GPS coordinates. User adds a Name and Notes. Data is saved locally.
-2. **Search & Retrieve:** User searches their saved places list via a search bar.
-3. **Navigate:** User taps a saved location card -> Taps "Navigate" -> Google Maps opens with destination coordinates ready for routing.
-4. **Auto-Sync:** Local JSON overrides the Google Drive JSON backup.
-5. **Restore:** If the user logs into a new device via Google, the app fetches JSON from Drive and populates local database.
+2. **Save a Location You Are Not At:** The Add Location screen supports custom latitude/longitude entry (with range validation), a **Paste location from clipboard** action (parses Google Maps full/short links, `geo:` URIs, and raw `lat, lng`), and a **Share target** so a place shared from Google Maps / WhatsApp / a browser opens the screen pre-filled.
+3. **Search & Retrieve:** User searches their saved places list via a search bar.
+4. **Navigate:** User taps a saved location card -> Taps "Navigate" -> Google Maps opens with destination coordinates ready for routing.
+5. **Auto-Sync:** Local JSON overrides the Google Drive JSON backup.
+6. **Restore:** If the user logs into a new device via Google, the app fetches JSON from Drive and populates local database.
 
 ## 3. Tech Stack Requirements
 
@@ -27,5 +28,6 @@
 - **Local Storage:** `Hive`.
 - **Location:** `geolocator`.
 - **Routing/Maps:** `url_launcher`.
+- **Share Target:** `receive_sharing_intent` (text/link sharing into the app).
 - **Auth & Sync:** `google_sign_in` and `googleapis` (Drive API v3).
 - **Localization:** `flutter_localizations` & `intl`.
