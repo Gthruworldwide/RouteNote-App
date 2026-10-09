@@ -48,3 +48,7 @@ app.*.map.json
 /android/build/
 /android/.gradle/
 /android/local.properties
+
+# Dev-machine supervisor agent (tool/) — never commit keys or reports
+/tool/.env
+/tool/reports/
