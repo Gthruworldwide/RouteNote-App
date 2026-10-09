@@ -1,7 +1,9 @@
 /// Compile-time configuration for RouteNote.
 ///
-/// None of these values should ever be hardcoded secrets. OAuth client ids are
-/// public identifiers; they are injected with `--dart-define` at build time:
+/// None of these values are secrets. OAuth *client* ids are public identifiers
+/// (the client *secret* is never used by the app). They default to the RouteNote
+/// Google Cloud project so the app works however it is launched (IDE, adb, or
+/// the run script), and can be overridden at build time:
 ///
 /// ```sh
 /// flutter run \
@@ -12,13 +14,21 @@ class AppConfig {
   const AppConfig._();
 
   /// Web / server OAuth client id. Required on Android for `google_sign_in`.
+  ///
+  /// Defaults to the RouteNote Web client; override with
+  /// `--dart-define=GOOGLE_SERVER_CLIENT_ID=...`.
   static const String googleServerClientId = String.fromEnvironment(
     'GOOGLE_SERVER_CLIENT_ID',
+    defaultValue:
+        '679774190551-ojvh4k0r769c77osa7n0v3a3itlvsfr4.apps.googleusercontent.com',
   );
 
-  /// iOS OAuth client id. Required on iOS.
+  /// iOS OAuth client id. Required on iOS. Public identifier; see
+  /// [googleServerClientId]. Override with `--dart-define=GOOGLE_IOS_CLIENT_ID=...`.
   static const String googleIosClientId = String.fromEnvironment(
     'GOOGLE_IOS_CLIENT_ID',
+    defaultValue:
+        '679774190551-79f3eefd6ncu34appi5rie8lo2use8i9.apps.googleusercontent.com',
   );
 
   /// Human-readable version shown in Settings → About.

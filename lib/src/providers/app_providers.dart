@@ -156,6 +156,10 @@ class AuthNotifier extends AsyncNotifier<AuthUser?> {
     state = await AsyncValue.guard<AuthUser?>(
       () => ref.read(authServiceProvider).signIn(),
     );
+    final Object? error = state.error;
+    if (error != null) {
+      debugPrint('RouteNote sign-in error: $error');
+    }
   }
 
   Future<void> signOut() async {

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../../core/config/app_config.dart';
@@ -14,15 +15,23 @@ class GoogleAuthService implements AuthService {
   @override
   Future<void> initialize() async {
     if (_initialized) return;
-    await GoogleSignIn.instance.initialize(
-      clientId: AppConfig.googleIosClientId.isEmpty
-          ? null
-          : AppConfig.googleIosClientId,
-      serverClientId: AppConfig.googleServerClientId.isEmpty
-          ? null
-          : AppConfig.googleServerClientId,
-    );
-    _initialized = true;
+    try {
+      await GoogleSignIn.instance.initialize(
+        clientId: AppConfig.googleIosClientId.isEmpty
+            ? null
+            : AppConfig.googleIosClientId,
+        serverClientId: AppConfig.googleServerClientId.isEmpty
+            ? null
+            : AppConfig.googleServerClientId,
+      );
+      _initialized = true;
+    } on GoogleSignInException catch (e) {
+      debugPrint(
+        'RouteNote GoogleSignIn.initialize failed: '
+        'code=${e.code.name} description=${e.description}',
+      );
+      rethrow;
+    }
   }
 
   @override
@@ -60,7 +69,11 @@ class GoogleAuthService implements AuthService {
       await _ensureAuthorized(account);
       return _user!;
     } on GoogleSignInException catch (e) {
-      throw AuthException(e.description ?? e.code.name);
+      debugPrint(
+        'RouteNote GoogleSignIn.signIn failed: '
+        'code=${e.code.name} description=${e.description}',
+      );
+      throw AuthException('${e.code.name}: ${e.description ?? ''}'.trim());
     }
   }
 
