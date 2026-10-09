@@ -19,6 +19,18 @@
   "fetchingLocation": "Getting your location…",
   "nameRequired": "Please enter a name",
 
+  "pasteFromClipboard": "Paste location from clipboard",
+  "clipboardNoLocation": "No coordinates found in the clipboard",
+  "clipboardPasted": "Location pasted from clipboard",
+  "locationModeCurrentGps": "Current GPS location",
+  "locationModeManual": "Custom coordinates",
+  "customCoordinates": "Custom coordinates",
+  "coordinateRequired": "Please enter a value",
+  "coordinateInvalid": "Enter a valid number",
+  "latitudeRange": "Latitude must be between -90 and 90",
+  "longitudeRange": "Longitude must be between -180 and 180",
+  "shareNoLocation": "No location found in the shared text",
+
   "save": "Save",
   "cancel": "Cancel",
   "delete": "Delete",

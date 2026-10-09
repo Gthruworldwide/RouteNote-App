@@ -194,6 +194,72 @@ abstract class AppLocalizations {
   /// **'Please enter a name'**
   String get nameRequired;
 
+  /// No description provided for @pasteFromClipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste location from clipboard'**
+  String get pasteFromClipboard;
+
+  /// No description provided for @clipboardNoLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'No coordinates found in the clipboard'**
+  String get clipboardNoLocation;
+
+  /// No description provided for @clipboardPasted.
+  ///
+  /// In en, this message translates to:
+  /// **'Location pasted from clipboard'**
+  String get clipboardPasted;
+
+  /// No description provided for @locationModeCurrentGps.
+  ///
+  /// In en, this message translates to:
+  /// **'Current GPS location'**
+  String get locationModeCurrentGps;
+
+  /// No description provided for @locationModeManual.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom coordinates'**
+  String get locationModeManual;
+
+  /// No description provided for @customCoordinates.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom coordinates'**
+  String get customCoordinates;
+
+  /// No description provided for @coordinateRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a value'**
+  String get coordinateRequired;
+
+  /// No description provided for @coordinateInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid number'**
+  String get coordinateInvalid;
+
+  /// No description provided for @latitudeRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Latitude must be between -90 and 90'**
+  String get latitudeRange;
+
+  /// No description provided for @longitudeRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Longitude must be between -180 and 180'**
+  String get longitudeRange;
+
+  /// No description provided for @shareNoLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'No location found in the shared text'**
+  String get shareNoLocation;
+
   /// No description provided for @save.
   ///
   /// In en, this message translates to:

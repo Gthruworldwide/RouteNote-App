@@ -57,6 +57,39 @@ class AppLocalizationsEn extends AppLocalizations {
   String get nameRequired => 'Please enter a name';
 
   @override
+  String get pasteFromClipboard => 'Paste location from clipboard';
+
+  @override
+  String get clipboardNoLocation => 'No coordinates found in the clipboard';
+
+  @override
+  String get clipboardPasted => 'Location pasted from clipboard';
+
+  @override
+  String get locationModeCurrentGps => 'Current GPS location';
+
+  @override
+  String get locationModeManual => 'Custom coordinates';
+
+  @override
+  String get customCoordinates => 'Custom coordinates';
+
+  @override
+  String get coordinateRequired => 'Please enter a value';
+
+  @override
+  String get coordinateInvalid => 'Enter a valid number';
+
+  @override
+  String get latitudeRange => 'Latitude must be between -90 and 90';
+
+  @override
+  String get longitudeRange => 'Longitude must be between -180 and 180';
+
+  @override
+  String get shareNoLocation => 'No location found in the shared text';
+
+  @override
   String get save => 'Save';
 
   @override

@@ -1,20 +1,43 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../data/models/place.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../providers/app_providers.dart';
+import '../../services/location_parser.dart';
 import '../../services/location_service.dart';
 
-/// Captures the current GPS position and lets the user name it.
+/// How the user is providing the coordinates for a place.
+enum LocationEntryMode {
+  /// Read the device's current GPS position.
+  gps,
+
+  /// Type or paste latitude/longitude by hand.
+  manual,
+}
+
+/// Captures the current GPS position — or a manually entered / pasted one — and
+/// lets the user name it.
 ///
 /// When [place] is provided the screen edits that existing location instead of
-/// capturing a new one.
+/// capturing a new one. When [initialLatitude]/[initialLongitude] are provided
+/// (for example from a shared map link) the screen opens in manual mode with
+/// those coordinates pre-filled.
 class AddPlaceScreen extends ConsumerStatefulWidget {
-  const AddPlaceScreen({super.key, this.place});
+  const AddPlaceScreen({
+    super.key,
+    this.place,
+    this.initialLatitude,
+    this.initialLongitude,
+    this.initialName,
+  });
 
   final Place? place;
+  final double? initialLatitude;
+  final double? initialLongitude;
+  final String? initialName;
 
   @override
   ConsumerState<AddPlaceScreen> createState() => _AddPlaceScreenState();
@@ -22,13 +45,18 @@ class AddPlaceScreen extends ConsumerStatefulWidget {
 
 class _AddPlaceScreenState extends ConsumerState<AddPlaceScreen> {
   static const Uuid _uuid = Uuid();
+  static const LocationParser _parser = LocationParser();
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _notesController;
+  late final TextEditingController _latitudeController;
+  late final TextEditingController _longitudeController;
 
+  LocationEntryMode _mode = LocationEntryMode.gps;
   LocationResult? _location;
   bool _capturing = false;
+  bool _pasting = false;
   bool _saving = false;
 
   bool get _isEditing => widget.place != null;
@@ -36,15 +64,30 @@ class _AddPlaceScreenState extends ConsumerState<AddPlaceScreen> {
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.place?.name ?? '');
+    _nameController = TextEditingController(
+      text: widget.place?.name ?? widget.initialName ?? '',
+    );
     _notesController = TextEditingController(text: widget.place?.notes ?? '');
-    if (_isEditing) {
-      final Place place = widget.place!;
-      _location = LocationSuccess(
-        latitude: place.latitude,
-        longitude: place.longitude,
-      );
+    _latitudeController = TextEditingController();
+    _longitudeController = TextEditingController();
+
+    final Place? place = widget.place;
+    final bool hasInitial =
+        widget.initialLatitude != null && widget.initialLongitude != null;
+
+    if (place != null) {
+      // Editing: start from the stored coordinates, but let the user change
+      // them without depending on a fresh GPS fix.
+      _mode = LocationEntryMode.manual;
+      _latitudeController.text = place.latitude.toString();
+      _longitudeController.text = place.longitude.toString();
+    } else if (hasInitial) {
+      // Opened from a shared/pasted location.
+      _mode = LocationEntryMode.manual;
+      _latitudeController.text = widget.initialLatitude!.toString();
+      _longitudeController.text = widget.initialLongitude!.toString();
     } else {
+      _mode = LocationEntryMode.gps;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _captureLocation();
       });
@@ -55,6 +98,8 @@ class _AddPlaceScreenState extends ConsumerState<AddPlaceScreen> {
   void dispose() {
     _nameController.dispose();
     _notesController.dispose();
+    _latitudeController.dispose();
+    _longitudeController.dispose();
     super.dispose();
   }
 
@@ -69,28 +114,100 @@ class _AddPlaceScreenState extends ConsumerState<AddPlaceScreen> {
     });
   }
 
+  void _setMode(LocationEntryMode mode) {
+    if (mode == _mode) return;
+    if (mode == LocationEntryMode.manual) {
+      // Seed the manual fields from the last GPS fix so nothing is lost.
+      if (_latitudeController.text.trim().isEmpty &&
+          _location is LocationSuccess) {
+        final LocationSuccess success = _location! as LocationSuccess;
+        _latitudeController.text = success.latitude.toString();
+        _longitudeController.text = success.longitude.toString();
+      }
+      setState(() => _mode = mode);
+      return;
+    }
+
+    setState(() => _mode = mode);
+    if (_location is! LocationSuccess) _captureLocation();
+  }
+
+  /// Reads the clipboard and fills in any coordinates (and name) it finds.
+  Future<void> _pasteFromClipboard() async {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+
+    setState(() => _pasting = true);
+    String text = '';
+    try {
+      final ClipboardData? data = await Clipboard.getData(Clipboard.kTextPlain);
+      text = data?.text?.trim() ?? '';
+    } finally {
+      if (mounted) setState(() => _pasting = false);
+    }
+
+    ParsedLocation? parsed;
+    if (text.isNotEmpty) {
+      parsed = _parser.parse(text);
+      if (parsed == null && _parser.looksLikeShortMapLink(text)) {
+        if (mounted) setState(() => _pasting = true);
+        parsed = await _parser.resolveShortLink(text);
+        if (mounted) setState(() => _pasting = false);
+      }
+    }
+
+    if (!mounted) return;
+    if (parsed == null) {
+      messenger.showSnackBar(SnackBar(content: Text(l10n.clipboardNoLocation)));
+      return;
+    }
+
+    final ParsedLocation location = parsed;
+    setState(() {
+      _mode = LocationEntryMode.manual;
+      _latitudeController.text = location.latitude.toString();
+      _longitudeController.text = location.longitude.toString();
+      final String? name = location.name ?? _parser.guessName(text);
+      if (name != null && name.isNotEmpty) _nameController.text = name;
+    });
+    messenger.showSnackBar(SnackBar(content: Text(l10n.clipboardPasted)));
+  }
+
   Future<void> _save() async {
-    if (_location is! LocationSuccess) return;
     if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    final double? latitude;
+    final double? longitude;
+    if (_mode == LocationEntryMode.gps) {
+      final LocationResult? location = _location;
+      if (location is! LocationSuccess) return;
+      latitude = location.latitude;
+      longitude = location.longitude;
+    } else {
+      latitude = double.tryParse(_latitudeController.text.trim());
+      longitude = double.tryParse(_longitudeController.text.trim());
+      if (latitude == null || longitude == null) return;
+    }
 
     final AppLocalizations l10n = AppLocalizations.of(context);
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
     final NavigatorState navigator = Navigator.of(context);
 
     final Place? original = widget.place;
-    final LocationSuccess success = _location! as LocationSuccess;
     final Place place = original == null
         ? Place(
             id: _uuid.v4(),
             name: _nameController.text.trim(),
             notes: _notesController.text.trim(),
-            latitude: success.latitude,
-            longitude: success.longitude,
+            latitude: latitude,
+            longitude: longitude,
             timestamp: DateTime.now().toUtc(),
           )
         : original.copyWith(
             name: _nameController.text.trim(),
             notes: _notesController.text.trim(),
+            latitude: latitude,
+            longitude: longitude,
           );
 
     setState(() => _saving = true);
@@ -98,6 +215,26 @@ class _AddPlaceScreenState extends ConsumerState<AddPlaceScreen> {
 
     messenger.showSnackBar(SnackBar(content: Text(l10n.placeSaved)));
     if (mounted) navigator.pop();
+  }
+
+  String? _validateLatitude(String? value) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final String text = value?.trim() ?? '';
+    if (text.isEmpty) return l10n.coordinateRequired;
+    final double? parsed = double.tryParse(text);
+    if (parsed == null) return l10n.coordinateInvalid;
+    if (parsed < -90 || parsed > 90) return l10n.latitudeRange;
+    return null;
+  }
+
+  String? _validateLongitude(String? value) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final String text = value?.trim() ?? '';
+    if (text.isEmpty) return l10n.coordinateRequired;
+    final double? parsed = double.tryParse(text);
+    if (parsed == null) return l10n.coordinateInvalid;
+    if (parsed < -180 || parsed > 180) return l10n.longitudeRange;
+    return null;
   }
 
   @override
@@ -113,7 +250,24 @@ class _AddPlaceScreenState extends ConsumerState<AddPlaceScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: <Widget>[
-            _buildLocationCard(l10n),
+            _buildModeSelector(l10n),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: (_pasting || _saving) ? null : _pasteFromClipboard,
+              icon: _pasting
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.content_paste_go),
+              label: Text(l10n.pasteFromClipboard),
+            ),
+            const SizedBox(height: 16),
+            if (_mode == LocationEntryMode.gps)
+              _buildLocationCard(l10n)
+            else
+              _buildManualCoordinates(l10n),
             const SizedBox(height: 16),
             TextFormField(
               controller: _nameController,
@@ -140,10 +294,7 @@ class _AddPlaceScreenState extends ConsumerState<AddPlaceScreen> {
             ),
             const SizedBox(height: 24),
             FilledButton.icon(
-              onPressed:
-                  (_capturing || _saving || _location is! LocationSuccess)
-                  ? null
-                  : _save,
+              onPressed: _canSave ? _save : null,
               icon: _saving
                   ? const SizedBox(
                       width: 18,
@@ -152,6 +303,75 @@ class _AddPlaceScreenState extends ConsumerState<AddPlaceScreen> {
                     )
                   : const Icon(Icons.check),
               label: Text(l10n.save),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  bool get _canSave {
+    if (_saving || _pasting) return false;
+    if (_mode == LocationEntryMode.gps) {
+      return !_capturing && _location is LocationSuccess;
+    }
+    return true;
+  }
+
+  Widget _buildModeSelector(AppLocalizations l10n) {
+    return Wrap(
+      spacing: 8,
+      children: <Widget>[
+        ChoiceChip(
+          label: Text(l10n.locationModeCurrentGps),
+          selected: _mode == LocationEntryMode.gps,
+          onSelected: (_) => _setMode(LocationEntryMode.gps),
+        ),
+        ChoiceChip(
+          label: Text(l10n.locationModeManual),
+          selected: _mode == LocationEntryMode.manual,
+          onSelected: (_) => _setMode(LocationEntryMode.manual),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildManualCoordinates(AppLocalizations l10n) {
+    final ThemeData theme = Theme.of(context);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(l10n.customCoordinates, style: theme.textTheme.labelLarge),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _latitudeController,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+                signed: true,
+              ),
+              decoration: InputDecoration(
+                labelText: l10n.latitude,
+                hintText: '30.044400',
+                prefixIcon: const Icon(Icons.pin_drop_outlined),
+              ),
+              validator: (String? value) => _validateLatitude(value),
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _longitudeController,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+                signed: true,
+              ),
+              decoration: InputDecoration(
+                labelText: l10n.longitude,
+                hintText: '31.235700',
+                prefixIcon: const Icon(Icons.pin_drop_outlined),
+              ),
+              validator: (String? value) => _validateLongitude(value),
             ),
           ],
         ),

@@ -14,6 +14,7 @@ import '../data/repositories/sync_repository.dart';
 import '../services/background_sync_scheduler.dart';
 import '../services/location_service.dart';
 import '../services/navigation_service.dart';
+import '../services/share_intent_service.dart';
 
 // ---------------------------------------------------------------------------
 // Storage & repositories
@@ -50,6 +51,9 @@ final Provider<LocationService> locationServiceProvider =
 
 final Provider<NavigationService> navigationServiceProvider =
     Provider<NavigationService>((Ref ref) => const NavigationService());
+
+final Provider<ShareIntentService> shareIntentServiceProvider =
+    Provider<ShareIntentService>((Ref ref) => const ShareIntentService());
 
 final Provider<AuthService> authServiceProvider = Provider<AuthService>(
   (Ref ref) => GoogleAuthService(),

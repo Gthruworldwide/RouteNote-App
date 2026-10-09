@@ -19,6 +19,18 @@
   "fetchingLocation": "جارٍ تحديد موقعك…",
   "nameRequired": "الرجاء إدخال اسم",
 
+  "pasteFromClipboard": "لصق موقع من الحافظة",
+  "clipboardNoLocation": "لا توجد إحداثيات في الحافظة",
+  "clipboardPasted": "تم لصق الموقع من الحافظة",
+  "locationModeCurrentGps": "الموقع الحالي (GPS)",
+  "locationModeManual": "إحداثيات مخصصة",
+  "customCoordinates": "إحداثيات مخصصة",
+  "coordinateRequired": "الرجاء إدخال قيمة",
+  "coordinateInvalid": "أدخل رقمًا صالحًا",
+  "latitudeRange": "يجب أن يكون خط العرض بين ‎-90 و90",
+  "longitudeRange": "يجب أن يكون خط الطول بين ‎-180 و180",
+  "shareNoLocation": "لم يتم العثور على موقع في النص المُشارَك",
+
   "save": "حفظ",
   "cancel": "إلغاء",
   "delete": "حذف",

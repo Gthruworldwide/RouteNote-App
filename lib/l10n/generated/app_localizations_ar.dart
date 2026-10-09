@@ -57,6 +57,39 @@ class AppLocalizationsAr extends AppLocalizations {
   String get nameRequired => 'الرجاء إدخال اسم';
 
   @override
+  String get pasteFromClipboard => 'لصق موقع من الحافظة';
+
+  @override
+  String get clipboardNoLocation => 'لا توجد إحداثيات في الحافظة';
+
+  @override
+  String get clipboardPasted => 'تم لصق الموقع من الحافظة';
+
+  @override
+  String get locationModeCurrentGps => 'الموقع الحالي (GPS)';
+
+  @override
+  String get locationModeManual => 'إحداثيات مخصصة';
+
+  @override
+  String get customCoordinates => 'إحداثيات مخصصة';
+
+  @override
+  String get coordinateRequired => 'الرجاء إدخال قيمة';
+
+  @override
+  String get coordinateInvalid => 'أدخل رقمًا صالحًا';
+
+  @override
+  String get latitudeRange => 'يجب أن يكون خط العرض بين ‎-90 و90';
+
+  @override
+  String get longitudeRange => 'يجب أن يكون خط الطول بين ‎-180 و180';
+
+  @override
+  String get shareNoLocation => 'لم يتم العثور على موقع في النص المُشارَك';
+
+  @override
   String get save => 'حفظ';
 
   @override
