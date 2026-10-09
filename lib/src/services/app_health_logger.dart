@@ -25,6 +25,10 @@ enum HealthEventType {
   agentRun,
   agentSkipped,
   agentFailure,
+
+  /// A coarse, sanitized "something went wrong" report recorded through
+  /// [AppObserverService]. The category lives in `data['category']`.
+  serviceIssue,
 }
 
 /// A single timestamped health/lifecycle event.
@@ -290,6 +294,7 @@ class AppHealthLogger {
         case HealthEventType.agentRun:
         case HealthEventType.agentSkipped:
         case HealthEventType.agentFailure:
+        case HealthEventType.serviceIssue:
           break;
       }
     }

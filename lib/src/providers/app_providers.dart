@@ -17,6 +17,7 @@ import '../data/repositories/sync_repository.dart';
 import '../core/config/app_config.dart';
 import '../services/agent_service.dart';
 import '../services/app_health_logger.dart';
+import '../services/app_observer_service.dart';
 import '../services/background_sync_scheduler.dart';
 import '../services/biometric_service.dart';
 import '../services/gemini_client.dart';
@@ -111,6 +112,14 @@ final Provider<AppHealthLogger> appHealthLoggerProvider =
         ref.watch(hiveDatabaseProvider).settingsBox,
         capacity: AppConfig.healthLogCapacity,
       );
+    });
+
+/// Sanitized issue-reporting facade layered over the health log.
+final Provider<AppObserverService> appObserverServiceProvider =
+    Provider<AppObserverService>((
+      Ref ref,
+    ) {
+      return AppObserverService(ref.watch(appHealthLoggerProvider));
     });
 
 /// Pure, offline rule engine.
@@ -282,9 +291,18 @@ class AuthNotifier extends AsyncNotifier<AuthUser?> {
         if (!ref.mounted) return;
         state = const AsyncValue<AuthUser?>.data(null);
       }
-    } catch (_) {
+    } catch (error, stackTrace) {
       // Offline or transient failure: keep the cached session so the UI stays
-      // on the Home screen.
+      // on the Home screen. Report a coarse, sanitized issue only when a real
+      // session existed but could not be validated — otherwise a signed-out
+      // user going offline would spam the log.
+      if (settings.isLoggedIn) {
+        ref.read(appObserverServiceProvider).logIssue(
+              category: AppIssueCategory.sync,
+              error: error.toString(),
+              stackTrace: stackTrace.toString(),
+            );
+      }
     } finally {
       _validating = false;
     }

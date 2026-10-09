@@ -52,13 +52,19 @@ class GoogleAuthService implements AuthService {
           .attemptLightweightAuthentication();
       if (attempt == null) return null;
       final GoogleSignInAccount? account = await attempt;
+      if (account == null) {
+        _account = null;
+        _user = null;
+        return null;
+      }
       _account = account;
-      _user = _toUser(account);
+      final GoogleSignInAccount a = account;
+      _user = _toUser(a);
 
       // Validate (and, when possible, refresh) the Drive token in the
       // background. The user is already on the Home screen, so this must never
       // prompt: only a non-interactive check is attempted.
-      await _validateDriveAccess(account);
+      await _validateDriveAccess(a);
       return _user;
     } on GoogleSignInException catch (e) {
       debugPrint(
