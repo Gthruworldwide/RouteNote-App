@@ -2,56 +2,144 @@
 
 **Save your favourite places offline. Sync them to your private Google Drive.**
 
-RouteNote is an offline-first, zero-backend Flutter app for Android and iOS. It
-saves GPS locations locally on the device (Hive), syncs a single JSON backup to
-your *private* Google Drive app-data folder (`drive.appdata` scope — no other
-Drive files are ever touched), and delegates turn-by-turn navigation to Google
-Maps or Waze via deep links.
+RouteNote is an **offline-first, zero-backend** Flutter app for Android and iOS.
+It saves GPS locations locally on the device (Hive), backs them up to the user's
+*private* Google Drive app-data folder, and delegates turn-by-turn navigation to
+Google Maps or Waze via deep links.
 
-No Firebase. No custom backend. Your data is yours.
+No Firebase. No custom server. No database to operate. Your data is yours.
+
+---
+
+## Table of contents
+
+- [Overview](#overview)
+- [Zero-backend architecture (Google Drive sync)](#zero-backend-architecture-google-drive-sync)
+- [Features](#features)
+- [Tech stack](#tech-stack)
+- [How sync works](#how-sync-works)
+- [Backup format](#backup-format)
+- [Project structure](#project-structure)
+- [Getting started](#getting-started)
+- [Configuration reference](#configuration-reference)
+- [Localization](#localization)
+- [Quality gates](#quality-gates)
+- [Platform configuration](#platform-configuration)
+- [Roadmap](#roadmap)
+- [License](#license)
+
+---
+
+## Overview
+
+RouteNote solves a simple problem: remembering places (a parking spot, a trailhead,
+a friend's building) without depending on a third-party account or a backend you
+have to pay for and maintain.
+
+- **Local-first.** Every place lives on the device in a Hive database. The app is
+  fully usable with no network and no sign-in.
+- **Private cloud backup.** Optional Google Sign-In grants exactly one scope,
+  `drive.appdata`, which exposes only the app's *own hidden* Drive folder. The
+  user's documents, photos, and other Drive files are never visible to the app.
+- **Zero backend.** There is no server to host, no auth server, and no analytics.
+  OAuth happens directly between the app and Google; the backup is a single JSON
+  file in the user's Drive.
+- **Bilingual.** Full English / Arabic UI, no hardcoded strings.
+
+## Zero-backend architecture (Google Drive sync)
+
+The app is a self-contained client. The only external service is Google (OAuth +
+Drive API), and it is used purely as a personal, private file store.
+
+```
+┌────────────────────────────── Flutter app (device) ──────────────────────────────┐
+│                                                                                   │
+│  UI: Home · Add Place · Place Detail · Settings        (plain Navigator)          │
+│        │                                                                          │
+│        ▼                                                                          │
+│  Riverpod 3 state (Notifier / AsyncNotifier / FutureProvider)                      │
+│        │                                                                          │
+│        ▼                                                                          │
+│  Repositories:  PlaceRepository            SyncRepository                         │
+│        │                 │                       │                                │
+│        ▼                 ▼                       ▼                                │
+│  PlaceLocalDataSource   Hive CE boxes      DriveService (googleapis v3)            │
+│  (JSON maps)            places/settings    _AuthenticatedClient (http.BaseClient)  │
+│                                                  │                                │
+└──────────────────────────────────────────────────┼───────────────────────────────┘
+                                                   │ Bearer token
+                                                   ▼
+                                    Google OAuth 2.0  +  Drive API
+                                    scope: drive.appdata (appDataFolder only)
+                                                   │
+                                                   ▼
+                                    routenote_backup.json (hidden app folder)
+```
+
+There is **no** application server, API gateway, or database host. The "backend"
+is the operating system's local storage plus the user's own Google Drive.
 
 ## Features
 
-- 📍 Save your current GPS location with a name and notes
-- 💾 Fully offline-first — all data lives in a local Hive database
-- ☁️ One-tap backup/sync to your **private** Google Drive app-data folder
-  - "Device wins": your device data always overwrites the Drive backup
-  - On a fresh device (empty database), the Drive backup is restored automatically
-- 🔁 Auto-sync on app open when a Google session is restored, plus a 24h
-  background backup task aligned to midnight (`workmanager`)
-- 🧭 Navigation delegated to Google Maps / Waze via deep links (`url_launcher`)
-- 🌐 Arabic / English UI (`flutter_localizations` + ARB files), no hardcoded strings
-- 🌗 Light & dark themes
+- 📍 Save the current GPS location with a name and notes.
+- 💾 Fully offline-first — all data lives in a local Hive database.
+- ☁️ One-tap backup/sync to the user's **private** Google Drive app-data folder.
+- 🔒 Only the `drive.appdata` scope is ever requested.
+- 🔁 Automatic sync on app open (once signed in), on app resume (throttled), and a
+  24-hour periodic background backup aligned to midnight.
+- ♻️ Automatic restore on a fresh device: when the local database is empty and a
+  backup exists, it is pulled down automatically.
+- 🧭 Navigation delegated to Google Maps / Waze via deep links — no in-app maps.
+- 🌐 Arabic / English UI (`flutter_localizations` + ARB files).
+- 🌗 Light & dark themes.
 
-## Architecture
-
-```
-UI (Home / Add / Detail / Settings)          ← 4 screens, plain Navigator
-      │
-Riverpod 3 (AsyncNotifier / Notifier)        ← state management
-      │
-Repositories (PlaceRepository, SyncRepository)
-      │                        │
-PlaceLocalDataSource       DriveService
-(Hive boxes)                (googleapis Drive v3 + _AuthenticatedClient)
-      │                        │
-Local JSON backup        Google OAuth 2.0 (google_sign_in v7)
-```
+## Tech stack
 
 | Concern | Choice |
 | --- | --- |
-| State management | Riverpod 3.4.3 (`Notifier` / `AsyncNotifier`) |
-| Local storage | `hive_ce` + `hive_ce_flutter` |
+| Framework | Flutter 3.44+ (stable) / Dart 3.12 |
+| State management | `flutter_riverpod` 3.x (`Notifier`, `AsyncNotifier`) |
+| Local storage | `hive_ce` + `hive_ce_flutter` (JSON maps, no codegen adapter) |
 | Google sign-in | `google_sign_in` 7.x new API (`authenticate(scopeHint:)`) |
-| Drive API | `googleapis` v3 with a custom `http.BaseClient` injecting the Bearer header |
-| Background sync | `workmanager` 24h periodic task (`ExistingPeriodicWorkPolicy.update`) |
-| Navigation | `url_launcher` intents only — no in-app turn-by-turn |
-| Routing | Plain `Navigator` (no go_router) |
+| Drive API | `googleapis` Drive v3 with a custom `http.BaseClient` injecting the Bearer token |
+| HTTP | `http` |
+| Background work | `workmanager` 24h periodic task (`ExistingPeriodicWorkPolicy.update`) |
+| Location | `geolocator` |
+| Deep links | `url_launcher` (Google Maps, `geo`, `google.navigation`, Waze, `https`) |
+| Localization | `flutter_localizations` + `intl` + ARB (`app_en.arb`, `app_ar.arb`) |
+| IDs | `uuid` |
+| Icons | `flutter_launcher_icons` (generated from `assets/app_icon.png`) |
+| Routing | Plain `Navigator` (no `go_router`) |
 
-### Backup format
+## How sync works
 
-The Drive backup is a single JSON file (`routenote_backup.json`) in the
-app-specific Drive folder:
+The device copy is **always the source of truth**; the Drive file is only a
+backup. This is a deliberate "device wins" policy (chosen over timestamp merging
+to avoid conflict resolution complexity).
+
+`SyncRepository.syncNow()`:
+
+1. If local data is **non-empty** → upload it, overwriting
+   `routenote_backup.json` in Drive.
+2. If local data is **empty** and a backup exists → download and restore it into
+   the local database (used when installing on a new phone).
+3. If not signed in → the sync is skipped silently.
+
+Syncs are triggered:
+
+- when a Google session is restored on app open;
+- when the app returns to the foreground (`AppLifecycleState.resumed`), throttled
+  to at most once per minute;
+- by a `workmanager` periodic task every 24 hours, first scheduled for the next
+  midnight. The task runs in a separate background isolate and re-initialises
+  Hive itself (`backgroundSyncDispatcher`).
+
+A manual **Restore from Google Drive** action is also available in Settings (with
+a confirmation dialog).
+
+## Backup format
+
+A single JSON file (`routenote_backup.json`) in the app-specific Drive folder:
 
 ```json
 {
@@ -69,148 +157,187 @@ app-specific Drive folder:
 }
 ```
 
-## Getting started
-
-### Prerequisites
-
-- Flutter 3.44+ (`stable`)
-- Android Studio (Android) and/or Xcode (iOS)
-- A Google Cloud project for the Drive backup
-
-### 1. Install dependencies
-
-```sh
-flutter pub get
-flutter gen-l10n        # runs automatically on build; explicit here is fine
-```
-
-### 2. Google Cloud / OAuth setup (required for Drive sync)
-
-The app never ships with real OAuth client IDs. They are injected at build time
-via `--dart-define`. To create yours:
-
-1. Go to the [Google Cloud Console](https://console.cloud.google.com/) and create
-   (or select) a project.
-2. **Enable the Google Drive API**:
-   *APIs & Services → Library → search "Google Drive API" → Enable.*
-3. Create OAuth client IDs under **APIs & Services → Credentials → Create
-   Credentials → OAuth client ID**:
-   - **Android** → create an *Android* OAuth client (SHA-1 from your debug/release
-     keystore) and note its **Client ID** — this becomes `GOOGLE_SERVER_CLIENT_ID`.
-     `google_sign_in` requires the *Web application* client ID as
-     `serverClientId` on Android, so:
-     - create a **Web application** type ID for the server client,
-     - and use the **Android** type client for the Play Services lookup.
-   - **iOS** → create an *iOS* OAuth client and copy the app's **Bundle ID**
-     (it must match `ios/Runner.xcodeproj`). This ID becomes
-     `GOOGLE_IOS_CLIENT_ID` and is also added to the iOS app's `Info.plist` URL
-     schemes (`com.googleusercontent.apps.<ios-client-id>`).
-
-   > The app requests only the `https://www.googleapis.com/auth/drive.appdata`
-   > scope — Google only grants access to the app's own hidden data folder, never
-   > the user's documents, photos, or Drive files.
-
-#### OAuth consent screen (one-time, required before sign-in works)
-
-1. Open **APIs & Services → OAuth consent screen** in your project.
-2. User type: **External** (an "Internal" app only works inside a Google
-   Workspace you own). Fill in the app name and support email.
-3. **Scopes**: add exactly one — `https://www.googleapis.com/auth/drive.appdata`
-   ("See and manage your app's data folder in Google Drive"). If it is not in
-   the picker, use **Add manually** and paste the scope URI.
-4. **Test users**: add your own Google account(s). While the app is in
-   **Testing** status, only these accounts can authorize — publishing is not
-   required for personal/MVP use.
-5. **Publish** the app only when ready to let anyone sign in. Note that
-   `drive.appdata` is a sensitive scope: for external users Google may ask for
-   an app verification review. As the project owner / test user you can
-   authorize regardless; the app still works for you without waiting on review.
-6. Android additionally needs an **Android OAuth client** whose SHA-1 matches
-   your signing keystore (debug + release): *Credentials → Create credentials →
-   OAuth client ID → Android*, with the SHA-1 from `keytool` / `signingReport`.
-   This lets Play Services recognize your app; the actual OAuth client that
-   `google_sign_in` uses at runtime is the **Web application** ID, passed via
-   `GOOGLE_SERVER_CLIENT_ID`.
-
-### 3. Run
-
-```sh
-# Android
-flutter run \
-  --dart-define=GOOGLE_SERVER_CLIENT_ID=xxxx.apps.googleusercontent.com \
-  --dart-define=GOOGLE_IOS_CLIENT_ID=yyyy.apps.googleusercontent.com
-
-# iOS (same flags; iOS client ID is what matters here)
-flutter run \
-  --dart-define=GOOGLE_SERVER_CLIENT_ID=xxxx.apps.googleusercontent.com \
-  --dart-define=GOOGLE_IOS_CLIENT_ID=yyyy.apps.googleusercontent.com
-```
-
-Release builds use the same `--dart-define` flags:
-
-```sh
-flutter build apk --release --dart-define=GOOGLE_SERVER_CLIENT_ID=... --dart-define=GOOGLE_IOS_CLIENT_ID=...
-flutter build ios --release --dart-define=GOOGLE_SERVER_CLIENT_ID=... --dart-define=GOOGLE_IOS_CLIENT_ID=...
-```
-
-> Without these defines the app builds and runs fully offline — sign-in is simply
-> unavailable until real client IDs are supplied.
-
-### 4. Quality gates
-
-```sh
-flutter analyze     # no issues
-flutter test        # widget smoke tests (Hive-backed)
-```
-
-## Platform configuration (already in place)
-
-- **Android** — `AndroidManifest.xml` declares `INTERNET`, coarse/fine location,
-  `RECEIVE_BOOT_COMPLETED` (re-registers the background task after reboot), and a
-  `<queries>` block for the `geo`, `google.navigation`, and `https` intents used
-  by deep links.
-- **iOS** — `Info.plist` includes `NSLocationWhenInUseUsageDescription` and
-  `LSApplicationQueriesSchemes` (`comgooglemaps`, `googlemaps`, `waze`).
-
-## Background sync
-
-- On every app launch, once a Google session is restored, a **device-wins** sync
-  runs (`SyncRepository.syncNow`):
-  - local data is non-empty → local data overwrites the Drive backup;
-  - local data is empty and a backup exists → the backup is restored into the
-    device (used when installing on a new phone).
-- A `workmanager` periodic task backs up every 24h, first scheduled at the next
-  midnight (`BackgroundSyncScheduler`). It runs in a separate background isolate
-  and re-initialises Hive itself — see `backgroundSyncDispatcher` in
-  `lib/src/services/background_sync_scheduler.dart`.
-
-## Project layout
+## Project structure
 
 ```
 lib/
-  app.dart                     # MaterialApp (l10n, theme, locale)
-  main.dart                    # bootstrap: Hive init + ProviderScope
-  l10n/                        # app_en.arb, app_ar.arb (+ generated/)
+  app.dart                         # MaterialApp (l10n, theme, locale) + lifecycle sync
+  main.dart                        # bootstrap: Hive init + ProviderScope
+  l10n/                            # app_en.arb, app_ar.arb (+ generated/)
   src/
-    core/config/app_config.dart    # --dart-define OAuth IDs, scopes, names
-    core/theme/app_theme.dart
-    core/utils/date_formats.dart
+    core/
+      config/app_config.dart       # --dart-define OAuth IDs, scope, file/box names
+      theme/app_theme.dart         # light & dark themes
+      utils/date_formats.dart
     data/
       models/                      # Place, BackupData (JSON shape)
       local/                       # HiveDatabase, PlaceLocalDataSource, SettingsRepository
       remote/                      # auth_service, google_auth_service, drive_service
       repositories/                # PlaceRepository, SyncRepository
-    services/                      # location, navigation, background sync
+    services/                      # location, navigation, background sync scheduler
     providers/app_providers.dart   # all Riverpod providers & notifiers
-    features/                      # home, add_place, place_detail, settings
-test/widget_test.dart
+    features/
+      home/                        # list + search + FAB + empty state
+      add_place/                   # capture GPS, name & notes
+      place_detail/                # view / navigate / delete
+      settings/                    # sign-in, sync, restore, language, theme
+test/widget_test.dart              # Hive-backed widget smoke tests
+scripts/run_dev.ps1                # Windows helper: run with real OAuth IDs
+assets/app_icon.png                # source icon for flutter_launcher_icons
 ```
 
-## Notes
+## Getting started
 
-- The device copy is always the source of truth; the Drive file is a backup.
-- Restoration is automatic only when the device database is empty and a backup
-  exists. A manual **Restore from Google Drive** action is also available in
-  Settings (with confirmation).
-- No analytics, no tracking, no third-party network calls besides Google OAuth /
-  Drive and the maps deep links you tap yourself.
+### Prerequisites
+
+- **Flutter 3.44+** on the `stable` channel (`flutter --version`).
+- **Android Studio** (for the Android SDK) and/or **Xcode** (iOS, macOS only).
+- A **Google Cloud project** to create the OAuth clients and enable the Drive API.
+- A physical device or emulator/Simulator.
+
+### 1. Clone and install dependencies
+
+```sh
+git clone https://github.com/Gthruworldwide/RouteNote-App.git
+cd RouteNote-App
+flutter pub get
+flutter gen-l10n        # runs automatically on build; explicit here is fine
+```
+
+### 2. Enable the Google Drive API
+
+In the [Google Cloud Console](https://console.cloud.google.com/):
+
+1. Create or select a project.
+2. **APIs & Services → Library → “Google Drive API” → Enable.**
+
+### 3. Create OAuth client IDs
+
+**API & Services → Credentials → Create credentials → OAuth client ID.**
+
+| Client type | Purpose | Feeds |
+| --- | --- | --- |
+| **Web application** | `serverClientId` used by `google_sign_in` on **Android** | `GOOGLE_SERVER_CLIENT_ID` |
+| **Android** | Lets Play Services recognise your app (package + SHA-1) | validation only |
+| **iOS** | Client for the iOS app (bundle `com.routenote.routenote`) | `GOOGLE_IOS_CLIENT_ID` |
+
+- **Android:** add your signing SHA-1 (`keytool -list -v -keystore ...`) under an
+  *Android* OAuth client with package name `com.routenote.routenote`. You can add
+  multiple fingerprints (debug **and** release).
+- **iOS:** create an *iOS* client with bundle ID `com.routenote.routenote`. The
+  reversed client ID
+  (`com.googleusercontent.apps.<ios-client-id>`) must be added to
+  `ios/Runner/Info.plist` under `CFBundleURLTypes` (see
+  [Platform configuration](#platform-configuration)).
+
+> The app requests **only** `https://www.googleapis.com/auth/drive.appdata`.
+
+#### OAuth consent screen (one-time)
+
+1. **APIs & Services → OAuth consent screen.**
+2. User type **External** (an “Internal” app only works inside a Workspace you own).
+3. **Scopes:** add `https://www.googleapis.com/auth/drive.appdata` (use *Add
+   manually* if it is not in the picker).
+4. **Test users:** add your Google account(s). While the app is in **Testing**
+   status, only these accounts can authorise — enough for personal/MVP use.
+5. Publish only when you want to open sign-in to everyone. `drive.appdata` is a
+   sensitive scope, so external users may trigger a verification review; as the
+   project owner/test user you can authorise without waiting.
+
+### 4. Run
+
+```sh
+# Android or iOS — the same client IDs are compiled in for both.
+flutter run \
+  --dart-define=GOOGLE_SERVER_CLIENT_ID=xxxx.apps.googleusercontent.com \
+  --dart-define=GOOGLE_IOS_CLIENT_ID=yyyy.apps.googleusercontent.com
+```
+
+> Without these defines the app still builds and runs fully offline — Google
+> sign-in is simply unavailable until real client IDs are supplied.
+
+On Windows there is a helper script (client IDs are public identifiers, not
+secrets):
+
+```powershell
+.\scripts\run_dev.ps1
+# or target a device explicitly:
+.\scripts\run_dev.ps1 -d <device-id>
+```
+
+### 5. Build for release
+
+```sh
+# Android
+flutter build apk     --release --dart-define=GOOGLE_SERVER_CLIENT_ID=... --dart-define=GOOGLE_IOS_CLIENT_ID=...
+flutter build appbundle --release --dart-define=GOOGLE_SERVER_CLIENT_ID=... --dart-define=GOOGLE_IOS_CLIENT_ID=...
+
+# iOS (requires macOS + Xcode)
+flutter build ios      --release --dart-define=GOOGLE_SERVER_CLIENT_ID=... --dart-define=GOOGLE_IOS_CLIENT_ID=...
+```
+
+Regenerate the native launcher icons after changing `assets/app_icon.png`:
+
+```sh
+flutter pub run flutter_launcher_icons
+```
+
+## Configuration reference
+
+All compile-time values live in `lib/src/core/config/app_config.dart` and are
+injected with `--dart-define` (never hardcoded):
+
+| `--dart-define` | Required | Where it is used |
+| --- | --- | --- |
+| `GOOGLE_SERVER_CLIENT_ID` | Android (for sign-in) | `serverClientId` in `GoogleSignIn.instance.initialize` |
+| `GOOGLE_IOS_CLIENT_ID` | iOS (for sign-in) | `clientId` in `GoogleSignIn.instance.initialize` |
+
+## Localization
+
+- Template locale: English (`lib/l10n/app_en.arb`); Arabic: `lib/l10n/app_ar.arb`.
+- Generated sources live in `lib/l10n/generated/` (output configured in
+  `l10n.yaml`). No user-facing string is hardcoded — everything goes through
+  `AppLocalizations`.
+
+## Quality gates
+
+```sh
+flutter analyze     # expected: No issues found!
+flutter test        # Hive-backed widget smoke tests
+```
+
+## Platform configuration
+
+Already committed — the notes below explain what is in place.
+
+- **Android** (`android/app/src/main/AndroidManifest.xml`):
+  `INTERNET`, `ACCESS_COARSE_LOCATION`, `ACCESS_FINE_LOCATION`,
+  `RECEIVE_BOOT_COMPLETED`, and a `<queries>` block for the `geo`,
+  `google.navigation`, and `https` intents.
+- **iOS** (`ios/Runner/Info.plist`): `NSLocationWhenInUseUsageDescription`,
+  `LSApplicationQueriesSchemes` (`comgooglemaps`, `googlemaps`, `waze`), and
+  `CFBundleURLTypes` containing the reversed iOS client ID
+  (`com.googleusercontent.apps.<ios-client-id>`) so the OAuth flow can return to
+  the app.
+- **Application ID / bundle ID:** `com.routenote.routenote` on both platforms.
+- **Icons:** generated with `flutter_launcher_icons` from `assets/app_icon.png`.
+
+## Roadmap
+
+| Phase | Scope | Status |
+| --- | --- | --- |
+| **1 — Local-first core** | Riverpod scaffolding, Hive CRUD, Home (search + FAB + empty state), Add Place (name/notes), Place Detail | ✅ Done |
+| **2 — Location capture** | `geolocator` with graceful permission handling (granted / denied / disabled / error) | ✅ Done |
+| **3 — Navigation deep links** | Google Maps / Waze via `url_launcher` intents only | ✅ Done |
+| **4 — Zero-backend sync** | Google Sign-In (v7), Drive v3 `appDataFolder`, device-wins backup/restore, auto-sync on open & resume, 24h background task | ✅ Done |
+| **5 — Polish & release** | EN/AR localization, light/dark themes, launcher icons, MIT license, README | ✅ Done |
+| **Future** | Optional timestamp-based merge, multi-device conflict UI, import/export, widget shortcut for parking | 💡 Ideas |
+
+## License
+
+Released under the **MIT License**. See [`MIT-LICENSE`](MIT-LICENSE).
+
+## Disclaimer
+
+RouteNote is an independent project and is not affiliated with Google, Google
+Maps, or Waze. Map and navigation trademarks belong to their respective owners.
