@@ -59,8 +59,14 @@
   "languageEnglish": "English",
   "languageArabic": "العربية",
   "selectLanguage": "Select language",
+  "sectionLocationServices": "Location services",
+  "sectionPreferences": "Preferences",
+  "appearance": "Appearance",
+  "themeSystem": "System",
+  "themeLight": "Light",
+  "themeDark": "Dark",
 
-  "sectionAccount": "Google Account",
+  "sectionAccount": "Account",
   "signInWithGoogle": "Sign in with Google",
   "signOut": "Sign out",
   "signedInAs": "Signed in as {email}",
@@ -72,13 +78,19 @@
   "notSignedIn": "Not signed in",
   "syncSignInRequired": "Sign in with Google to sync",
 
-  "sectionSync": "Backup & Sync",
+  "sectionSync": "Sync & backup",
   "syncNow": "Sync now",
   "syncInProgress": "Syncing…",
   "syncComplete": "Sync complete",
   "syncSkipped": "Sign in to sync",
   "syncFailed": "Sync failed: {error}",
   "@syncFailed": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "signInFailed": "Sign-in failed: {error}",
+  "@signInFailed": {
     "placeholders": {
       "error": { "type": "String" }
     }
@@ -108,8 +120,22 @@
   "locationUnavailable": "Could not determine your location. Please try again.",
   "openAppSettings": "Open settings",
 
+  "locationStatusGps": "GPS",
+  "locationStatusPermission": "Permission",
+  "locationGpsOn": "On",
+  "locationGpsOff": "Off",
+  "locationPermissionGranted": "Allowed",
+  "locationPermissionDenied": "Denied",
+  "locationPermissionDeniedForever": "Blocked",
+  "locationPermissionUnknown": "Not requested",
+  "manageLocation": "Manage location",
+  "locationChipServiceOff": "Location off — tap to enable",
+  "locationChipPermissionDenied": "Location permission needed — tap to allow",
+  "locationChipDeniedForever": "Location blocked — tap to open settings",
+
   "errorGeneric": "Something went wrong",
 
   "about": "About",
+  "version": "Version",
   "aboutDescription": "RouteNote saves your favourite places offline and syncs them to your private Google Drive. Navigation opens in the maps app you already use."
 }

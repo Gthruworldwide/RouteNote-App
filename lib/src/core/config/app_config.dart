@@ -21,6 +21,11 @@ class AppConfig {
     'GOOGLE_IOS_CLIENT_ID',
   );
 
+  /// Human-readable version shown in Settings → About.
+  ///
+  /// Keep in sync with the `version` field in `pubspec.yaml`.
+  static const String appVersion = '1.0.1';
+
   /// Drive scope that grants access to the hidden, app-specific
   /// `appDataFolder` only. The user's other Drive files are never visible.
   static const String driveAppDataScope =

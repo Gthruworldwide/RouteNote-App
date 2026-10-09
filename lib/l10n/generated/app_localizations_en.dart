@@ -140,7 +140,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get selectLanguage => 'Select language';
 
   @override
-  String get sectionAccount => 'Google Account';
+  String get sectionLocationServices => 'Location services';
+
+  @override
+  String get sectionPreferences => 'Preferences';
+
+  @override
+  String get appearance => 'Appearance';
+
+  @override
+  String get themeSystem => 'System';
+
+  @override
+  String get themeLight => 'Light';
+
+  @override
+  String get themeDark => 'Dark';
+
+  @override
+  String get sectionAccount => 'Account';
 
   @override
   String get signInWithGoogle => 'Sign in with Google';
@@ -160,7 +178,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncSignInRequired => 'Sign in with Google to sync';
 
   @override
-  String get sectionSync => 'Backup & Sync';
+  String get sectionSync => 'Sync & backup';
 
   @override
   String get syncNow => 'Sync now';
@@ -177,6 +195,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String syncFailed(String error) {
     return 'Sync failed: $error';
+  }
+
+  @override
+  String signInFailed(String error) {
+    return 'Sign-in failed: $error';
   }
 
   @override
@@ -228,10 +251,51 @@ class AppLocalizationsEn extends AppLocalizations {
   String get openAppSettings => 'Open settings';
 
   @override
+  String get locationStatusGps => 'GPS';
+
+  @override
+  String get locationStatusPermission => 'Permission';
+
+  @override
+  String get locationGpsOn => 'On';
+
+  @override
+  String get locationGpsOff => 'Off';
+
+  @override
+  String get locationPermissionGranted => 'Allowed';
+
+  @override
+  String get locationPermissionDenied => 'Denied';
+
+  @override
+  String get locationPermissionDeniedForever => 'Blocked';
+
+  @override
+  String get locationPermissionUnknown => 'Not requested';
+
+  @override
+  String get manageLocation => 'Manage location';
+
+  @override
+  String get locationChipServiceOff => 'Location off — tap to enable';
+
+  @override
+  String get locationChipPermissionDenied =>
+      'Location permission needed — tap to allow';
+
+  @override
+  String get locationChipDeniedForever =>
+      'Location blocked — tap to open settings';
+
+  @override
   String get errorGeneric => 'Something went wrong';
 
   @override
   String get about => 'About';
+
+  @override
+  String get version => 'Version';
 
   @override
   String get aboutDescription =>

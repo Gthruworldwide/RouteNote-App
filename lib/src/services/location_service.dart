@@ -33,6 +33,28 @@ class LocationFailure extends LocationResult {
   final String message;
 }
 
+/// A snapshot of the device's location availability, used by UI indicators.
+class LocationStatus {
+  const LocationStatus({
+    required this.serviceEnabled,
+    required this.permission,
+  });
+
+  /// Whether the system location service (GPS) is switched on.
+  final bool serviceEnabled;
+
+  /// The current permission level the OS reports for this app.
+  final LocationPermission permission;
+
+  /// True when the app is allowed to read the device location.
+  bool get permissionGranted =>
+      permission == LocationPermission.always ||
+      permission == LocationPermission.whileInUse;
+
+  /// True when the user must act before location can be read.
+  bool get needsAction => !serviceEnabled || !permissionGranted;
+}
+
 /// GPS capture built on `geolocator`.
 class LocationService {
   const LocationService();
@@ -69,6 +91,16 @@ class LocationService {
       return LocationFailure(e.toString());
     }
   }
+
+  /// Whether the system location service (GPS) is currently enabled.
+  Future<bool> isServiceEnabled() => Geolocator.isLocationServiceEnabled();
+
+  /// Reads the current permission level without prompting the user.
+  Future<LocationPermission> checkPermission() => Geolocator.checkPermission();
+
+  /// Shows the OS permission dialog when possible.
+  Future<LocationPermission> requestPermission() =>
+      Geolocator.requestPermission();
 
   Future<bool> openAppSettings() => Geolocator.openAppSettings();
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 
 import '../data/local/hive_database.dart';
 import '../data/local/place_local_data_source.dart';
@@ -87,6 +88,13 @@ final AsyncNotifierProvider<PlacesNotifier, List<Place>> placesProvider =
 final AsyncNotifierProvider<AuthNotifier, AuthUser?> authProvider =
     AsyncNotifierProvider<AuthNotifier, AuthUser?>(AuthNotifier.new);
 
+/// Live location availability (GPS on/off + permission) for status indicators.
+final AsyncNotifierProvider<LocationStatusNotifier, LocationStatus>
+locationStatusProvider =
+    AsyncNotifierProvider<LocationStatusNotifier, LocationStatus>(
+      LocationStatusNotifier.new,
+    );
+
 /// Backup / sync status.
 final NotifierProvider<SyncController, SyncState> syncControllerProvider =
     NotifierProvider<SyncController, SyncState>(SyncController.new);
@@ -96,10 +104,8 @@ final NotifierProvider<LocaleController, Locale?> localeControllerProvider =
     NotifierProvider<LocaleController, Locale?>(LocaleController.new);
 
 /// App theme mode, persisted.
-final NotifierProvider<ThemeModeController, ThemeMode>
-themeModeControllerProvider = NotifierProvider<ThemeModeController, ThemeMode>(
-  ThemeModeController.new,
-);
+final NotifierProvider<ThemeModeController, ThemeMode> themeModeProvider =
+    NotifierProvider<ThemeModeController, ThemeMode>(ThemeModeController.new);
 
 // ---------------------------------------------------------------------------
 // Notifiers
@@ -290,5 +296,52 @@ class ThemeModeController extends Notifier<ThemeMode> {
   Future<void> setThemeMode(ThemeMode mode) async {
     await ref.read(settingsRepositoryProvider).setThemeModeIndex(mode.index);
     state = mode;
+  }
+}
+
+/// Exposes the device's location availability and drives the user to the right
+/// OS surface when location access is missing.
+class LocationStatusNotifier extends AsyncNotifier<LocationStatus> {
+  @override
+  Future<LocationStatus> build() => _read();
+
+  Future<LocationStatus> _read() async {
+    final LocationService service = ref.read(locationServiceProvider);
+    final bool serviceEnabled = await service.isServiceEnabled();
+    final LocationPermission permission = await service.checkPermission();
+    return LocationStatus(
+      serviceEnabled: serviceEnabled,
+      permission: permission,
+    );
+  }
+
+  /// Re-reads the status without flashing a loading state (used on resume).
+  Future<void> refresh() async {
+    try {
+      state = AsyncValue<LocationStatus>.data(await _read());
+    } catch (error, stackTrace) {
+      state = AsyncValue<LocationStatus>.error(error, stackTrace);
+    }
+  }
+
+  /// Sends the user to the right place to grant location access:
+  /// - GPS switched off → the system location settings screen.
+  /// - Permission permanently denied → this app's settings screen.
+  /// - Otherwise → the runtime permission dialog.
+  Future<void> requestAccessFromUser() async {
+    final LocationService service = ref.read(locationServiceProvider);
+    final LocationStatus? status = state.value;
+    if (status != null) {
+      if (!status.serviceEnabled) {
+        await service.openLocationSettings();
+      } else if (!status.permissionGranted) {
+        if (status.permission == LocationPermission.deniedForever) {
+          await service.openAppSettings();
+        } else {
+          await service.requestPermission();
+        }
+      }
+    }
+    await refresh();
   }
 }

@@ -37,13 +37,16 @@ class _RouteNoteAppState extends ConsumerState<RouteNoteApp>
       // Sync on resume is always silent: the user never sees a dialog, and a
       // signed-out device simply skips (SyncOutcome.skippedNotSignedIn).
       ref.read(syncControllerProvider.notifier).syncSilently();
+      // The user may have toggled GPS or granted permission in the system
+      // settings while the app was backgrounded.
+      ref.read(locationStatusProvider.notifier).refresh();
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final Locale? locale = ref.watch(localeControllerProvider);
-    final ThemeMode themeMode = ref.watch(themeModeControllerProvider);
+    final ThemeMode themeMode = ref.watch(themeModeProvider);
 
     return MaterialApp(
       onGenerateTitle: (BuildContext context) =>

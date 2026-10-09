@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 
+import '../../../l10n/generated/app_localizations.dart';
+import '../../core/config/app_config.dart';
 import '../../core/utils/date_formats.dart';
 import '../../data/remote/auth_service.dart';
 import '../../data/repositories/sync_repository.dart';
-import '../../../l10n/generated/app_localizations.dart';
 import '../../providers/app_providers.dart';
+import '../../services/location_service.dart';
 
-/// Settings: language, Google account, and backup/sync controls.
+/// Settings, grouped into cards: account, location services, sync & backup,
+/// preferences and about.
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
@@ -17,6 +21,10 @@ class SettingsScreen extends ConsumerWidget {
     final AsyncValue<AuthUser?> auth = ref.watch(authProvider);
     final SyncState sync = ref.watch(syncControllerProvider);
     final Locale? locale = ref.watch(localeControllerProvider);
+    final ThemeMode themeMode = ref.watch(themeModeProvider);
+    final AsyncValue<LocationStatus> location = ref.watch(
+      locationStatusProvider,
+    );
 
     ref.listen<SyncState>(syncControllerProvider, (prev, next) {
       if (prev?.status != SyncStatus.syncing) return;
@@ -46,129 +54,40 @@ class SettingsScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: <Widget>[
-          _SectionHeader(title: l10n.sectionLanguage),
-          const SizedBox(height: 4),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.language),
-              title: Text(l10n.selectLanguage),
-              trailing: DropdownButton<Locale?>(
-                value: locale,
-                underline: const SizedBox.shrink(),
-                items: <DropdownMenuItem<Locale?>>[
-                  DropdownMenuItem<Locale?>(
-                    value: null,
-                    child: Text(l10n.languageSystem),
-                  ),
-                  DropdownMenuItem<Locale?>(
-                    value: const Locale('en'),
-                    child: Text(l10n.languageEnglish),
-                  ),
-                  DropdownMenuItem<Locale?>(
-                    value: const Locale('ar'),
-                    child: Text(l10n.languageArabic),
-                  ),
-                ],
-                onChanged: (Locale? value) => ref
-                    .read(localeControllerProvider.notifier)
-                    .setLocale(value),
-              ),
-            ),
+          _SettingsSection(
+            title: l10n.sectionAccount,
+            child: _buildAccountCard(context, ref, l10n, auth),
           ),
-          const SizedBox(height: 24),
-          _SectionHeader(title: l10n.sectionAccount),
-          const SizedBox(height: 4),
-          Card(child: _buildAccountSection(context, ref, l10n, auth)),
-          const SizedBox(height: 24),
-          _SectionHeader(title: l10n.sectionSync),
-          const SizedBox(height: 4),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  Row(
-                    children: <Widget>[
-                      const Icon(Icons.cloud_done_outlined),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          sync.lastSynced == null
-                              ? l10n.neverSynced
-                              : l10n.lastSynced(
-                                  formatDateTime(
-                                    sync.lastSynced!,
-                                    Localizations.localeOf(context).toString(),
-                                  ),
-                                ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    l10n.localOverridesCloud,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  FilledButton.icon(
-                    onPressed: sync.isSyncing
-                        ? null
-                        : () => ref
-                              .read(syncControllerProvider.notifier)
-                              .syncNow(),
-                    icon: sync.isSyncing
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.cloud_upload_outlined),
-                    label: Text(
-                      sync.isSyncing ? l10n.syncInProgress : l10n.syncNow,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  OutlinedButton.icon(
-                    onPressed: sync.isSyncing
-                        ? null
-                        : () => _confirmRestore(context, ref, l10n),
-                    icon: const Icon(Icons.settings_backup_restore_outlined),
-                    label: Text(l10n.restoreFromDrive),
-                  ),
-                ],
-              ),
-            ),
+          _SettingsSection(
+            title: l10n.sectionLocationServices,
+            child: _buildLocationCard(context, ref, l10n, location),
           ),
-          const SizedBox(height: 24),
-          _SectionHeader(title: l10n.about),
-          const SizedBox(height: 4),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                l10n.aboutDescription,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
+          _SettingsSection(
+            title: l10n.sectionSync,
+            child: _buildSyncCard(context, ref, l10n, sync),
           ),
-          const SizedBox(height: 32),
+          _SettingsSection(
+            title: l10n.sectionPreferences,
+            child: _buildPreferencesCard(context, ref, l10n, locale, themeMode),
+          ),
+          _SettingsSection(
+            title: l10n.about,
+            child: _buildAboutCard(context, l10n),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildAccountSection(
+  // --- Account ---------------------------------------------------------------
+
+  Widget _buildAccountCard(
     BuildContext context,
     WidgetRef ref,
     AppLocalizations l10n,
     AsyncValue<AuthUser?> auth,
   ) {
+    final ThemeData theme = Theme.of(context);
     return auth.when(
       loading: () => const Padding(
         padding: EdgeInsets.all(24),
@@ -183,7 +102,7 @@ class SettingsScreen extends ConsumerWidget {
           return Column(
             children: <Widget>[
               ListTile(
-                leading: const Icon(Icons.account_circle_outlined),
+                leading: const CircleAvatar(child: Icon(Icons.person_outline)),
                 title: Text(l10n.notSignedIn),
                 subtitle: Text(l10n.syncSignInRequired),
               ),
@@ -198,14 +117,22 @@ class SettingsScreen extends ConsumerWidget {
             ],
           );
         }
+
+        final String? photoUrl = user.photoUrl;
+        final bool hasPhoto = photoUrl != null && photoUrl.isNotEmpty;
         return Column(
           children: <Widget>[
             ListTile(
               leading: CircleAvatar(
-                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                child: const Icon(Icons.person),
+                radius: 26,
+                backgroundColor: theme.colorScheme.primaryContainer,
+                foregroundImage: hasPhoto ? NetworkImage(photoUrl) : null,
+                child: hasPhoto ? null : const Icon(Icons.person),
               ),
-              title: Text(user.displayName ?? user.email),
+              title: Text(
+                user.displayName ?? user.email,
+                style: theme.textTheme.titleMedium,
+              ),
               subtitle: Text(user.email),
             ),
             Padding(
@@ -222,6 +149,268 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
+  // --- Location services -----------------------------------------------------
+
+  Widget _buildLocationCard(
+    BuildContext context,
+    WidgetRef ref,
+    AppLocalizations l10n,
+    AsyncValue<LocationStatus> location,
+  ) {
+    final LocationStatus? status = location.value;
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          if (status == null)
+            Row(
+              children: <Widget>[
+                const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                const SizedBox(width: 12),
+                Text(l10n.fetchingLocation),
+              ],
+            )
+          else ...<Widget>[
+            _StatusRow(
+              icon: status.serviceEnabled ? Icons.gps_fixed : Icons.gps_off,
+              label: l10n.locationStatusGps,
+              value: status.serviceEnabled
+                  ? l10n.locationGpsOn
+                  : l10n.locationGpsOff,
+              ok: status.serviceEnabled,
+            ),
+            const SizedBox(height: 10),
+            _StatusRow(
+              icon: status.permissionGranted
+                  ? Icons.check_circle_outline
+                  : Icons.error_outline,
+              label: l10n.locationStatusPermission,
+              value: _permissionLabel(l10n, status.permission),
+              ok: status.permissionGranted,
+            ),
+          ],
+          const SizedBox(height: 16),
+          FilledButton.tonalIcon(
+            onPressed: () => ref
+                .read(locationStatusProvider.notifier)
+                .requestAccessFromUser(),
+            icon: const Icon(Icons.tune),
+            label: Text(l10n.manageLocation),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _permissionLabel(
+    AppLocalizations l10n,
+    LocationPermission permission,
+  ) {
+    return switch (permission) {
+      LocationPermission.always ||
+      LocationPermission.whileInUse => l10n.locationPermissionGranted,
+      LocationPermission.deniedForever => l10n.locationPermissionDeniedForever,
+      LocationPermission.denied => l10n.locationPermissionDenied,
+      _ => l10n.locationPermissionUnknown,
+    };
+  }
+
+  // --- Sync & backup ---------------------------------------------------------
+
+  Widget _buildSyncCard(
+    BuildContext context,
+    WidgetRef ref,
+    AppLocalizations l10n,
+    SyncState sync,
+  ) {
+    final ThemeData theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              const Icon(Icons.cloud_done_outlined),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  sync.lastSynced == null
+                      ? l10n.neverSynced
+                      : l10n.lastSynced(
+                          formatDateTime(
+                            sync.lastSynced!,
+                            Localizations.localeOf(context).toString(),
+                          ),
+                        ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            l10n.localOverridesCloud,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 16),
+          FilledButton.icon(
+            onPressed: sync.isSyncing
+                ? null
+                : () => ref.read(syncControllerProvider.notifier).syncNow(),
+            icon: sync.isSyncing
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.cloud_upload_outlined),
+            label: Text(sync.isSyncing ? l10n.syncInProgress : l10n.syncNow),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: sync.isSyncing
+                ? null
+                : () => _confirmRestore(context, ref, l10n),
+            icon: const Icon(Icons.settings_backup_restore_outlined),
+            label: Text(l10n.restoreFromDrive),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- Preferences -----------------------------------------------------------
+
+  Widget _buildPreferencesCard(
+    BuildContext context,
+    WidgetRef ref,
+    AppLocalizations l10n,
+    Locale? locale,
+    ThemeMode themeMode,
+  ) {
+    final ThemeData theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.language),
+            title: Text(l10n.selectLanguage),
+            trailing: DropdownButton<Locale?>(
+              value: locale,
+              underline: const SizedBox.shrink(),
+              items: <DropdownMenuItem<Locale?>>[
+                DropdownMenuItem<Locale?>(
+                  value: null,
+                  child: Text(l10n.languageSystem),
+                ),
+                DropdownMenuItem<Locale?>(
+                  value: const Locale('en'),
+                  child: Text(l10n.languageEnglish),
+                ),
+                DropdownMenuItem<Locale?>(
+                  value: const Locale('ar'),
+                  child: Text(l10n.languageArabic),
+                ),
+              ],
+              onChanged: (Locale? value) =>
+                  ref.read(localeControllerProvider.notifier).setLocale(value),
+            ),
+          ),
+          const Divider(height: 24),
+          Row(
+            children: <Widget>[
+              const Icon(Icons.dark_mode_outlined, size: 20),
+              const SizedBox(width: 12),
+              Text(l10n.appearance, style: theme.textTheme.titleSmall),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: <Widget>[
+              _ThemeChoice(
+                label: l10n.themeSystem,
+                icon: Icons.brightness_auto,
+                value: ThemeMode.system,
+                selected: themeMode,
+                onSelected: (ThemeMode value) =>
+                    ref.read(themeModeProvider.notifier).setThemeMode(value),
+              ),
+              _ThemeChoice(
+                label: l10n.themeLight,
+                icon: Icons.light_mode,
+                value: ThemeMode.light,
+                selected: themeMode,
+                onSelected: (ThemeMode value) =>
+                    ref.read(themeModeProvider.notifier).setThemeMode(value),
+              ),
+              _ThemeChoice(
+                label: l10n.themeDark,
+                icon: Icons.dark_mode,
+                value: ThemeMode.dark,
+                selected: themeMode,
+                onSelected: (ThemeMode value) =>
+                    ref.read(themeModeProvider.notifier).setThemeMode(value),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- About -----------------------------------------------------------------
+
+  Widget _buildAboutCard(BuildContext context, AppLocalizations l10n) {
+    final ThemeData theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            l10n.aboutDescription,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const Divider(height: 24),
+          Row(
+            children: <Widget>[
+              Icon(
+                Icons.info_outline,
+                size: 18,
+                color: theme.colorScheme.primary,
+              ),
+              const SizedBox(width: 8),
+              Text(l10n.version, style: theme.textTheme.bodyMedium),
+              const Spacer(),
+              Text(
+                'v${AppConfig.appVersion}',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- Actions ---------------------------------------------------------------
+
   Future<void> _signIn(
     BuildContext context,
     WidgetRef ref,
@@ -233,7 +422,7 @@ class SettingsScreen extends ConsumerWidget {
       await ref.read(syncControllerProvider.notifier).syncNow();
     } on AuthException catch (e) {
       messenger.showSnackBar(
-        SnackBar(content: Text('${l10n.syncFailed} ${e.message}')),
+        SnackBar(content: Text(l10n.signInFailed(e.message))),
       );
     } catch (_) {
       messenger.showSnackBar(SnackBar(content: Text(l10n.errorGeneric)));
@@ -276,23 +465,99 @@ class SettingsScreen extends ConsumerWidget {
   }
 }
 
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title});
+/// Section header + card container used to group related settings.
+class _SettingsSection extends StatelessWidget {
+  const _SettingsSection({required this.title, required this.child});
 
   final String title;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: Text(
-        title,
-        style: theme.textTheme.labelLarge?.copyWith(
-          color: theme.colorScheme.primary,
-          letterSpacing: 0.4,
-        ),
+      padding: const EdgeInsets.only(bottom: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Text(
+              title,
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: theme.colorScheme.primary,
+                letterSpacing: 0.4,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Card(child: child),
+        ],
       ),
+    );
+  }
+}
+
+/// A label/value row with a status colour, e.g. "GPS — On".
+class _StatusRow extends StatelessWidget {
+  const _StatusRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.ok,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final bool ok;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final Color color = ok
+        ? theme.colorScheme.primary
+        : theme.colorScheme.error;
+    return Row(
+      children: <Widget>[
+        Icon(icon, size: 20, color: color),
+        const SizedBox(width: 12),
+        Expanded(child: Text(label, style: theme.textTheme.bodyMedium)),
+        Text(
+          value,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: color,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// One option in the theme-mode selector.
+class _ThemeChoice extends StatelessWidget {
+  const _ThemeChoice({
+    required this.label,
+    required this.icon,
+    required this.value,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  final String label;
+  final IconData icon;
+  final ThemeMode value;
+  final ThemeMode selected;
+  final ValueChanged<ThemeMode> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return ChoiceChip(
+      avatar: Icon(icon, size: 18),
+      label: Text(label),
+      selected: value == selected,
+      onSelected: (_) => onSelected(value),
     );
   }
 }

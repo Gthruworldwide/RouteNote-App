@@ -9,6 +9,7 @@ import '../../services/navigation_service.dart';
 import '../add_place/add_place_screen.dart';
 import '../place_detail/place_detail_screen.dart';
 import '../settings/settings_screen.dart';
+import 'widgets/location_status_chip.dart';
 import 'widgets/place_card.dart';
 
 /// The main screen: search, list, FAB capture, sync + settings actions.
@@ -151,6 +152,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
           ),
+          const LocationStatusChip(),
           Expanded(child: _buildBody(placesAsync, l10n)),
         ],
       ),

@@ -65,6 +65,11 @@ class AppTheme {
       snackBarTheme: const SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
       ),
+      dividerTheme: DividerThemeData(
+        space: 1,
+        thickness: 1,
+        color: scheme.outlineVariant,
+      ),
     );
   }
 }

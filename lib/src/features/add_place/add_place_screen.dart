@@ -215,21 +215,24 @@ class _AddPlaceScreenState extends ConsumerState<AddPlaceScreen> {
             ),
           ),
         );
-      case LocationPermissionDenied():
-        return _LocationMessageCard(
-          icon: Icons.location_off_outlined,
-          title: l10n.locationPermissionTitle,
-          message: l10n.locationPermissionMessage,
-          actionLabel: l10n.openAppSettings,
-          onAction: () => ref.read(locationServiceProvider).openAppSettings(),
-        );
       case LocationServiceDisabled():
         return _LocationMessageCard(
           icon: Icons.location_disabled_outlined,
           title: l10n.locationServicesDisabled,
           message: null,
           actionLabel: l10n.openAppSettings,
-          onAction: () => ref.read(locationServiceProvider).openAppSettings(),
+          onAction: () =>
+              ref.read(locationServiceProvider).openLocationSettings(),
+        );
+      case LocationPermissionDenied(:final permanentlyDenied):
+        return _LocationMessageCard(
+          icon: Icons.location_off_outlined,
+          title: l10n.locationPermissionTitle,
+          message: l10n.locationPermissionMessage,
+          actionLabel: permanentlyDenied ? l10n.openAppSettings : l10n.retry,
+          onAction: permanentlyDenied
+              ? () => ref.read(locationServiceProvider).openAppSettings()
+              : _captureLocation,
         );
       case LocationFailure():
         return _LocationMessageCard(

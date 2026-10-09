@@ -350,10 +350,46 @@ abstract class AppLocalizations {
   /// **'Select language'**
   String get selectLanguage;
 
+  /// No description provided for @sectionLocationServices.
+  ///
+  /// In en, this message translates to:
+  /// **'Location services'**
+  String get sectionLocationServices;
+
+  /// No description provided for @sectionPreferences.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferences'**
+  String get sectionPreferences;
+
+  /// No description provided for @appearance.
+  ///
+  /// In en, this message translates to:
+  /// **'Appearance'**
+  String get appearance;
+
+  /// No description provided for @themeSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get themeSystem;
+
+  /// No description provided for @themeLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get themeLight;
+
+  /// No description provided for @themeDark.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get themeDark;
+
   /// No description provided for @sectionAccount.
   ///
   /// In en, this message translates to:
-  /// **'Google Account'**
+  /// **'Account'**
   String get sectionAccount;
 
   /// No description provided for @signInWithGoogle.
@@ -389,7 +425,7 @@ abstract class AppLocalizations {
   /// No description provided for @sectionSync.
   ///
   /// In en, this message translates to:
-  /// **'Backup & Sync'**
+  /// **'Sync & backup'**
   String get sectionSync;
 
   /// No description provided for @syncNow.
@@ -421,6 +457,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sync failed: {error}'**
   String syncFailed(String error);
+
+  /// No description provided for @signInFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in failed: {error}'**
+  String signInFailed(String error);
 
   /// No description provided for @lastSynced.
   ///
@@ -500,6 +542,78 @@ abstract class AppLocalizations {
   /// **'Open settings'**
   String get openAppSettings;
 
+  /// No description provided for @locationStatusGps.
+  ///
+  /// In en, this message translates to:
+  /// **'GPS'**
+  String get locationStatusGps;
+
+  /// No description provided for @locationStatusPermission.
+  ///
+  /// In en, this message translates to:
+  /// **'Permission'**
+  String get locationStatusPermission;
+
+  /// No description provided for @locationGpsOn.
+  ///
+  /// In en, this message translates to:
+  /// **'On'**
+  String get locationGpsOn;
+
+  /// No description provided for @locationGpsOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get locationGpsOff;
+
+  /// No description provided for @locationPermissionGranted.
+  ///
+  /// In en, this message translates to:
+  /// **'Allowed'**
+  String get locationPermissionGranted;
+
+  /// No description provided for @locationPermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Denied'**
+  String get locationPermissionDenied;
+
+  /// No description provided for @locationPermissionDeniedForever.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked'**
+  String get locationPermissionDeniedForever;
+
+  /// No description provided for @locationPermissionUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Not requested'**
+  String get locationPermissionUnknown;
+
+  /// No description provided for @manageLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage location'**
+  String get manageLocation;
+
+  /// No description provided for @locationChipServiceOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Location off — tap to enable'**
+  String get locationChipServiceOff;
+
+  /// No description provided for @locationChipPermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Location permission needed — tap to allow'**
+  String get locationChipPermissionDenied;
+
+  /// No description provided for @locationChipDeniedForever.
+  ///
+  /// In en, this message translates to:
+  /// **'Location blocked — tap to open settings'**
+  String get locationChipDeniedForever;
+
   /// No description provided for @errorGeneric.
   ///
   /// In en, this message translates to:
@@ -511,6 +625,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'About'**
   String get about;
+
+  /// No description provided for @version.
+  ///
+  /// In en, this message translates to:
+  /// **'Version'**
+  String get version;
 
   /// No description provided for @aboutDescription.
   ///

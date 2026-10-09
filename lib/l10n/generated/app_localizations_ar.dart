@@ -139,7 +139,25 @@ class AppLocalizationsAr extends AppLocalizations {
   String get selectLanguage => 'اختر اللغة';
 
   @override
-  String get sectionAccount => 'حساب جوجل';
+  String get sectionLocationServices => 'خدمات الموقع';
+
+  @override
+  String get sectionPreferences => 'التفضيلات';
+
+  @override
+  String get appearance => 'المظهر';
+
+  @override
+  String get themeSystem => 'النظام';
+
+  @override
+  String get themeLight => 'فاتح';
+
+  @override
+  String get themeDark => 'داكن';
+
+  @override
+  String get sectionAccount => 'الحساب';
 
   @override
   String get signInWithGoogle => 'تسجيل الدخول بجوجل';
@@ -159,7 +177,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get syncSignInRequired => 'سجّل الدخول بجوجل للمزامنة';
 
   @override
-  String get sectionSync => 'النسخ الاحتياطي والمزامنة';
+  String get sectionSync => 'المزامنة والنسخ الاحتياطي';
 
   @override
   String get syncNow => 'مزامنة الآن';
@@ -176,6 +194,11 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String syncFailed(String error) {
     return 'فشلت المزامنة: $error';
+  }
+
+  @override
+  String signInFailed(String error) {
+    return 'فشل تسجيل الدخول: $error';
   }
 
   @override
@@ -225,10 +248,49 @@ class AppLocalizationsAr extends AppLocalizations {
   String get openAppSettings => 'افتح الإعدادات';
 
   @override
+  String get locationStatusGps => 'نظام تحديد المواقع';
+
+  @override
+  String get locationStatusPermission => 'الإذن';
+
+  @override
+  String get locationGpsOn => 'مفعّل';
+
+  @override
+  String get locationGpsOff => 'متوقف';
+
+  @override
+  String get locationPermissionGranted => 'مسموح';
+
+  @override
+  String get locationPermissionDenied => 'مرفوض';
+
+  @override
+  String get locationPermissionDeniedForever => 'محظور';
+
+  @override
+  String get locationPermissionUnknown => 'لم يُطلب';
+
+  @override
+  String get manageLocation => 'إدارة الموقع';
+
+  @override
+  String get locationChipServiceOff => 'الموقع متوقف — اضغط للتفعيل';
+
+  @override
+  String get locationChipPermissionDenied => 'إذن الموقع مطلوب — اضغط للسماح';
+
+  @override
+  String get locationChipDeniedForever => 'الموقع محظور — اضغط لفتح الإعدادات';
+
+  @override
   String get errorGeneric => 'حدث خطأ ما';
 
   @override
   String get about => 'حول';
+
+  @override
+  String get version => 'الإصدار';
 
   @override
   String get aboutDescription =>
