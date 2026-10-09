@@ -248,6 +248,17 @@ such as `savedPlaces`, `nearbyClusters`, `recentSyncFailures`, `lastBackupDaysAg
 are sent — never place names, notes, ids or coordinates. Cloud AI can be turned
 off at any time in **Settings → Smart insights**.
 
+To keep suggestions grounded in real state, the cloud model may call two small
+**on-device tools** (executed locally — the model never runs code itself):
+
+- `checkSyncStatus` — reports the real Drive backup timestamp and recent sync
+  success/failure/skip counts from the local health log,
+- `parseLocationLink` — validates a pasted map link or raw text and returns its
+  coordinates.
+
+A tool result is only produced — and only leaves the device — if the model
+actually invokes it, which itself only happens while cloud AI is enabled.
+
 ## Backup format
 
 A single JSON file (`routenote_backup.json`) in the app-specific Drive folder:

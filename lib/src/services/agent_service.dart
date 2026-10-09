@@ -6,14 +6,20 @@ import '../data/models/place.dart';
 import 'app_health_logger.dart';
 import 'gemini_client.dart';
 import 'local_insight_engine.dart';
+import 'location_parser.dart';
 
 /// Orchestrates the recommendation agent.
 ///
 /// * The **local** [LocalInsightEngine] always runs — instant, offline, private.
 /// * The optional **cloud** [GeminiClient] augments it with LLM suggestions when
-///   an API key is configured and the user has left cloud AI enabled.
+///   an API key is configured and the user has left cloud AI enabled. The cloud
+///   model may call the on-device tools in [tools] to ground its suggestions in
+///   real sync state or to validate a pasted link.
 ///
 /// Only anonymous aggregate metrics are sent to the cloud (see [_metrics]).
+/// Tool results (sync timestamps, parsed coordinates) leave the device **only**
+/// when a function is actually invoked — which itself only happens while cloud
+/// AI is enabled.
 class AgentService {
   AgentService({
     required this.logger,
@@ -27,8 +33,80 @@ class AgentService {
   final LocalInsightEngine engine;
   final GeminiClient _cloud;
 
+  static const LocationParser _parser = LocationParser();
+
   /// Whether the cloud path can currently run.
   bool get isCloudAvailable => settings.isCloudAiEnabled && _cloud.isConfigured;
+
+  /// On-device tools the cloud model may call. Execution happens locally; only
+  /// the (small, non-identifying) result map is sent back to the model.
+  List<AgentTool> get tools => <AgentTool>[
+        AgentTool(
+          name: 'checkSyncStatus',
+          description:
+              'Checks current Google Drive sync state and last sync timestamp',
+          parameters: const <String, Object?>{
+            'type': 'object',
+            'properties': <String, Object?>{},
+          },
+          execute: _checkSyncStatus,
+        ),
+        AgentTool(
+          name: 'parseLocationLink',
+          description:
+              'Parses pasted map URL or text to validate lat/long extraction',
+          parameters: const <String, Object?>{
+            'type': 'object',
+            'properties': <String, Object?>{
+              'inputUrl': <String, Object?>{
+                'type': 'string',
+                'description': 'The text or link to parse',
+              },
+            },
+            'required': <String>['inputUrl'],
+          },
+          execute: _parseLocationLink,
+        ),
+      ];
+
+  /// Grounds the model in the real Drive backup state stored on this device.
+  Future<Map<String, Object?>> _checkSyncStatus(
+    Map<String, Object?> args,
+  ) async {
+    final HealthSummary health = logger.summary();
+    final DateTime? lastSynced = settings.lastSynced?.toUtc();
+    return <String, Object?>{
+      'lastSyncedIso': lastSynced?.toIso8601String(),
+      'syncSucceeded': health.syncSucceeded,
+      'syncFailed': health.syncFailed,
+      'syncSkipped': health.syncSkipped,
+    };
+  }
+
+  /// Validates a map URL or raw text and, when it parses, returns its
+  /// coordinates. Short links are resolved over the network; any failure is
+  /// reported without throwing.
+  Future<Map<String, Object?>> _parseLocationLink(
+    Map<String, Object?> args,
+  ) async {
+    final String input = args['inputUrl']?.toString().trim() ?? '';
+    if (input.isEmpty) {
+      return <String, Object?>{'success': false, 'reason': 'empty_input'};
+    }
+    ParsedLocation? parsed = _parser.parse(input);
+    if (parsed == null && _parser.looksLikeShortMapLink(input)) {
+      parsed = await _parser.resolveShortLink(input);
+    }
+    if (parsed == null) {
+      return <String, Object?>{'success': false, 'reason': 'no_location_found'};
+    }
+    return <String, Object?>{
+      'success': true,
+      'latitude': parsed.latitude,
+      'longitude': parsed.longitude,
+      if (parsed.name != null && parsed.name!.isNotEmpty) 'name': parsed.name,
+    };
+  }
 
   /// Rule-based insights. Always available, never throws.
   List<AgentInsight> localInsights(AgentContext context) =>
@@ -61,6 +139,7 @@ class AgentService {
       final List<AgentInsight> insights = await _cloud.fetchInsights(
         metrics: _metrics(context, local, languageCode),
         languageName: languageName,
+        tools: tools,
       );
       logger.log(
         HealthEventType.agentRun,

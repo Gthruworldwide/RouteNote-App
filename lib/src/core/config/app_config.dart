@@ -92,6 +92,9 @@ class AppConfig {
   /// Network timeout for a single cloud recommendation request.
   static const Duration agentRequestTimeout = Duration(seconds: 12);
 
+  /// Maximum function-call round trips allowed per cloud request.
+  static const int agentToolRounds = 4;
+
   /// Maximum number of insights shown at once (the rest are queued away).
   static const int maxAgentInsights = 3;
 

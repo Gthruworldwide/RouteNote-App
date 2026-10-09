@@ -148,4 +148,76 @@ void main() {
     expect(insights.single.kind, AgentInsightKind.welcome);
     expect(service.isCloudAvailable, isFalse);
   });
+
+  test('registers on-device tools the model can call', () {
+    final AgentService service = AgentService(
+      logger: AppHealthLogger(box),
+      settings: settings,
+      cloudClient: GeminiClient(apiKey: 'test-key'),
+    );
+
+    final List<AgentTool> tools = service.tools;
+    expect(
+      tools.map((AgentTool t) => t.name),
+      containsAll(<String>['checkSyncStatus', 'parseLocationLink']),
+    );
+
+    final AgentTool parse = tools.firstWhere(
+      (AgentTool t) => t.name == 'parseLocationLink',
+    );
+    expect(parse.parameters['required'], <String>['inputUrl']);
+    expect(
+      (parse.parameters['properties'] as Map)['inputUrl'],
+      isA<Map<String, Object?>>(),
+    );
+  });
+
+  test('checkSyncStatus tool reports real local sync state', () async {
+    final AppHealthLogger logger = AppHealthLogger(box);
+    await settings.setLastSynced(DateTime.utc(2026, 2, 1, 12));
+    final AgentService service = AgentService(
+      logger: logger,
+      settings: settings,
+      cloudClient: GeminiClient(apiKey: 'test-key'),
+    );
+    final AgentTool tool = service.tools.firstWhere(
+      (AgentTool t) => t.name == 'checkSyncStatus',
+    );
+
+    final Map<String, Object?> result =
+        await tool.execute(const <String, Object?>{});
+    expect(result['lastSyncedIso'], '2026-02-01T12:00:00.000Z');
+    expect(result['syncSucceeded'], 0);
+    expect(result['syncFailed'], 0);
+
+    logger.log(HealthEventType.syncFailed);
+    final Map<String, Object?> after =
+        await tool.execute(const <String, Object?>{});
+    expect(after['syncFailed'], 1);
+  });
+
+  test('parseLocationLink tool validates coordinates and rejects garbage', () async {
+    final AgentService service = AgentService(
+      logger: AppHealthLogger(box),
+      settings: settings,
+      cloudClient: GeminiClient(apiKey: 'test-key'),
+    );
+    final AgentTool tool = service.tools.firstWhere(
+      (AgentTool t) => t.name == 'parseLocationLink',
+    );
+
+    final Map<String, Object?> ok = await tool.execute(<String, Object?>{
+      'inputUrl':
+          'https://www.google.com/maps/place/Cairo+Tower/@30.0459,31.2243,17z',
+    });
+    expect(ok['success'], isTrue);
+    expect(ok['latitude'], 30.0459);
+    expect(ok['longitude'], 31.2243);
+
+    final Map<String, Object?> bad = await tool.execute(<String, Object?>{
+      'inputUrl': 'just a plain note with no location',
+    });
+    expect(bad['success'], isFalse);
+    expect(bad['reason'], 'no_location_found');
+  });
 }

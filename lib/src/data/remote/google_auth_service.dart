@@ -44,22 +44,14 @@ class GoogleAuthService implements AuthService {
   Future<AuthUser?> signInSilently() async {
     await initialize();
     try {
-      final GoogleSignInAccount? account =
-          await GoogleSignIn.instance.signInSilently();
-      if (account == null) {
-        final Future<GoogleSignInAccount?>? attempt = GoogleSignIn.instance
-            .attemptLightweightAuthentication();
-        if (attempt != null) {
-          final GoogleSignInAccount? lightweight = await attempt;
-          if (lightweight != null) {
-            _account = lightweight;
-            _user = _toUser(lightweight);
-            await _validateDriveAccess(lightweight);
-            return _user;
-          }
-        }
-        return null;
-      }
+      // google_sign_in v7: `signInSilently()` doesn't exist. Use lightweight
+      // authentication first (non-interactive). If unavailable, try authenticate
+      // with `signIn`? No, that would prompt. We'll fall back to lightweight
+      // attempt; if it returns null, there is no stored session to reuse.
+      final Future<GoogleSignInAccount?>? attempt = GoogleSignIn.instance
+          .attemptLightweightAuthentication();
+      if (attempt == null) return null;
+      final GoogleSignInAccount? account = await attempt;
       _account = account;
       _user = _toUser(account);
 

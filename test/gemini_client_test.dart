@@ -103,6 +103,182 @@ void main() {
     );
   });
 
+  test('executes tool calls on-device and continues the conversation', () async {
+    int requests = 0;
+    bool executed = false;
+    final GeminiClient client = GeminiClient(
+      apiKey: 'test-key',
+      client: MockClient((http.Request request) async {
+        requests++;
+        final Map<String, dynamic> body =
+            jsonDecode(request.body) as Map<String, dynamic>;
+        if (requests == 1) {
+          // Tools are declared up front.
+          final List<dynamic> tools = body['tools'] as List<dynamic>;
+          final List<dynamic> declarations =
+              tools.first['functionDeclarations'] as List<dynamic>;
+          expect(
+            declarations.map((dynamic d) => d['name']),
+            containsAll(<String>['checkSyncStatus', 'parseLocationLink']),
+          );
+          return http.Response(
+            jsonEncode(<String, Object?>{
+              'candidates': <Object?>[
+                <String, Object?>{
+                  'content': <String, Object?>{
+                    'parts': <Object?>[
+                      <String, Object?>{
+                        'functionCall': <String, Object?>{
+                          'name': 'checkSyncStatus',
+                          'args': <String, Object?>{},
+                        },
+                      },
+                    ],
+                  },
+                },
+              ],
+            }),
+            200,
+          );
+        }
+        // Second round: the functionResponse for checkSyncStatus was appended.
+        final List<dynamic> contents = body['contents'] as List<dynamic>;
+        final Map<String, dynamic> modelTurn =
+            contents[1] as Map<String, dynamic>;
+        expect(modelTurn['role'], 'model');
+        final Map<String, dynamic> responseTurn =
+            contents[2] as Map<String, dynamic>;
+        expect(responseTurn['role'], 'user');
+        final List<dynamic> parts =
+            responseTurn['parts'] as List<dynamic>;
+        final Map<String, dynamic> responsePart =
+            parts.first as Map<String, dynamic>;
+        final Map<String, dynamic> functionResponse =
+            responsePart['functionResponse'] as Map<String, dynamic>;
+        expect(functionResponse['name'], 'checkSyncStatus');
+        expect(
+          (functionResponse['response'] as Map<dynamic, dynamic>)['result'],
+          <String, Object?>{'ok': true},
+        );
+        return _responseWith(<Map<String, String>>[
+          <String, String>{
+            'title': 'Grounded',
+            'body': 'Sync looks healthy.',
+            'severity': 'info',
+          },
+        ]);
+      }),
+    );
+
+    final List<AgentInsight> insights = await client.fetchInsights(
+      metrics: const <String, Object?>{},
+      languageName: 'English',
+      tools: <AgentTool>[
+        AgentTool(
+          name: 'checkSyncStatus',
+          description: 'Check sync state',
+          parameters: const <String, Object?>{
+            'type': 'object',
+            'properties': <String, Object?>{},
+          },
+          execute: (Map<String, Object?> args) async {
+            executed = true;
+            return <String, Object?>{'ok': true};
+          },
+        ),
+        AgentTool(
+          name: 'parseLocationLink',
+          description: 'Parse a link',
+          parameters: const <String, Object?>{
+            'type': 'object',
+            'properties': <String, Object?>{
+              'inputUrl': <String, Object?>{'type': 'string'},
+            },
+            'required': <String>['inputUrl'],
+          },
+          execute: (Map<String, Object?> args) async =>
+              <String, Object?>{'success': false},
+        ),
+      ],
+    );
+
+    expect(requests, 2);
+    expect(executed, isTrue);
+    expect(insights, hasLength(1));
+    expect(insights.single.customTitle, 'Grounded');
+  });
+
+  test('reports an unknown tool instead of failing the request', () async {
+    int requests = 0;
+    final GeminiClient client = GeminiClient(
+      apiKey: 'test-key',
+      client: MockClient((http.Request request) async {
+        requests++;
+        if (requests > 1) return _responseWith(const <Map<String, String>>[]);
+        return http.Response(
+          jsonEncode(<String, Object?>{
+            'candidates': <Object?>[
+              <String, Object?>{
+                'content': <String, Object?>{
+                  'parts': <Object?>[
+                    <String, Object?>{
+                      'functionCall': <String, Object?>{
+                        'name': 'totallyUnknown',
+                        'args': <String, Object?>{},
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+          }),
+          200,
+        );
+      }),
+    );
+
+    final List<AgentInsight> insights = await client.fetchInsights(
+      metrics: const <String, Object?>{},
+      languageName: 'English',
+      tools: <AgentTool>[
+        AgentTool(
+          name: 'checkSyncStatus',
+          description: 'Check sync state',
+          parameters: const <String, Object?>{
+            'type': 'object',
+            'properties': <String, Object?>{},
+          },
+          execute: (Map<String, Object?> args) async =>
+              <String, Object?>{'ok': true},
+        ),
+      ],
+    );
+
+    // The loop still terminates: the model is told the tool is missing and the
+    // next round's text answer is parsed normally.
+    expect(requests, 2);
+    expect(insights, isEmpty);
+  });
+
+  test('does not declare tools when none are provided', () async {
+    Map<String, dynamic>? captured;
+    final GeminiClient client = GeminiClient(
+      apiKey: 'test-key',
+      client: MockClient((http.Request request) async {
+        captured = jsonDecode(request.body) as Map<String, dynamic>;
+        return _responseWith(const <Map<String, String>>[]);
+      }),
+    );
+
+    await client.fetchInsights(
+      metrics: const <String, Object?>{},
+      languageName: 'English',
+    );
+
+    expect(captured, isNotNull);
+    expect(captured!.containsKey('tools'), isFalse);
+  });
+
   test('strips markdown code fences from the response', () async {
     final GeminiClient client = GeminiClient(
       apiKey: 'test-key',
