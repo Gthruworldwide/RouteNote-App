@@ -1,0 +1,40 @@
+# RouteNote — Cursor Rules
+
+RouteNote is an **offline-first** Flutter app (saved places, optional Google
+Drive backup, opt-in Gemini "Smart Insights"). Full, pass/fail evaluation
+standards for every area of the codebase live in
+[AGENT_SKILLS.md](AGENT_SKILLS.md) — **read it before editing and before
+finishing any task**, then run the verification gate (`flutter analyze lib test`
+→ no issues, `flutter test` → all green).
+
+## Non-negotiables (summary)
+
+1. **Zero backend / offline-first.** No RouteNote server. App works fully
+   offline. Network allowed only for: Drive sync while signed in, opt-in
+   Gemini (`--dart-define=GEMINI_API_KEY`, key in `x-goog-api-key` header, never
+   URL), map deep links, and short-link resolution. No new network dependency
+   or endpoint host without justification.
+2. **Persistence = Hive CE only** (`placesBox` + `settingsBox` via
+   repositories). No direct `box.put` from widgets/providers.
+3. **Riverpod 3.4.x.** `ref.watch` only in `build`; timers disposed via
+   `ref.onDispose`; no needless rebuilds.
+4. **i18n (EN/AR).** Every user-facing string in `app_en.arb` +
+   `app_ar.arb`, used via generated `AppLocalizations`. Never hardcode.
+5. **Silent Google Auth** via `attemptLightweightAuthentication()` —
+   `GoogleSignIn.signInSilently()` was **removed in google_sign_in v7**; do not
+   reintroduce. Drive restore only when the local list is empty.
+6. **Sign-out keeps ALL local data** (zero data loss, per README). Sign-out
+   clears the Google session + auth snapshot only — never `placesBox`.
+   A data wipe is a separate, explicitly-confirmed feature.
+7. **Secrets.** Never log raw transport errors or the Gemini key; gate
+   `debugPrint` with `kDebugMode`. No tokens/keys/coordinates in release output.
+8. **Locked/hidden places** are guarded by `BiometricService` (the only
+   `local_auth` touchpoint); content reveals only after successful auth.
+9. **Location parsing** through `LocationParser` only — maps-URL regex set +
+   custom coordinate validation; every pattern has a unit test.
+10. **Dark mode & RTL.** Colors from `AppTheme`/`colorScheme` (no hardcoded
+    `Colors.white/black` except QR canvas); layout uses directional padding and
+    must render correctly in Arabic.
+
+> When in doubt, AGENT_SKILLS.md wins. Report per-area pass/fail with evidence
+> per the "Reporting" section there.
