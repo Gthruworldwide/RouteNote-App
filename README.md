@@ -219,6 +219,7 @@ lib/
 test/widget_test.dart              # Hive-backed widget smoke tests
 scripts/run_dev.ps1                # Windows helper: run with real OAuth IDs
 assets/app_icon.png                # source icon for flutter_launcher_icons
+assets/app_icon_animated.gif       # bundled animated asset
 ```
 
 ## Getting started

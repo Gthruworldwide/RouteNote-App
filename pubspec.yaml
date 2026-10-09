@@ -74,6 +74,11 @@ flutter:
   # Generate the localizations from the ARB files in lib/l10n.
   generate: true
 
+  # Bundled assets. The launcher icon source (assets/app_icon.png) is consumed
+  # at build time by flutter_launcher_icons and does not need to be listed here.
+  assets:
+    - assets/app_icon_animated.gif
+
 flutter_launcher_icons:
   android: true
   ios: true
