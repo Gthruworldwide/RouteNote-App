@@ -1,0 +1,115 @@
+{
+  "@@locale": "en",
+
+  "appTitle": "RouteNote",
+  "placesTitle": "My Places",
+  "searchHint": "Search by name or notes",
+
+  "addPlace": "Save current location",
+  "addPlaceTitle": "Save Location",
+  "editPlaceTitle": "Edit Location",
+  "fieldName": "Name",
+  "fieldNameHint": "e.g. John's House",
+  "fieldNotes": "Notes",
+  "fieldNotesHint": "e.g. Gate 3, second floor",
+  "locationCoordinates": "Coordinates",
+  "latitude": "Latitude",
+  "longitude": "Longitude",
+  "currentLocation": "Current location",
+  "fetchingLocation": "Getting your location…",
+  "nameRequired": "Please enter a name",
+
+  "save": "Save",
+  "cancel": "Cancel",
+  "delete": "Delete",
+  "edit": "Edit",
+  "ok": "OK",
+  "retry": "Retry",
+
+  "navigate": "Navigate",
+  "openInGoogleMaps": "Open in Google Maps",
+  "openInWaze": "Open in Waze",
+  "copyCoordinates": "Copy coordinates",
+  "coordinatesCopied": "Coordinates copied to clipboard",
+
+  "placeSaved": "Location saved",
+  "placeDeleted": "Location deleted",
+  "placeDetailsTitle": "Place details",
+  "deletePlaceTitle": "Delete place?",
+  "deletePlaceMessage": "\"{name}\" will be removed from this device and from your next backup.",
+  "@deletePlaceMessage": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "createdAt": "Saved {date}",
+  "@createdAt": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+
+  "emptyPlacesTitle": "No saved places yet",
+  "emptyPlacesMessage": "Tap the button below to save your current location.",
+  "noSearchResults": "No places match your search.",
+
+  "settingsTitle": "Settings",
+  "sectionLanguage": "Language",
+  "languageSystem": "System default",
+  "languageEnglish": "English",
+  "languageArabic": "العربية",
+  "selectLanguage": "Select language",
+
+  "sectionAccount": "Google Account",
+  "signInWithGoogle": "Sign in with Google",
+  "signOut": "Sign out",
+  "signedInAs": "Signed in as {email}",
+  "@signedInAs": {
+    "placeholders": {
+      "email": { "type": "String" }
+    }
+  },
+  "notSignedIn": "Not signed in",
+  "syncSignInRequired": "Sign in with Google to sync",
+
+  "sectionSync": "Backup & Sync",
+  "syncNow": "Sync now",
+  "syncInProgress": "Syncing…",
+  "syncComplete": "Sync complete",
+  "syncSkipped": "Sign in to sync",
+  "syncFailed": "Sync failed: {error}",
+  "@syncFailed": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "lastSynced": "Last synced: {date}",
+  "@lastSynced": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "neverSynced": "Never synced",
+  "localOverridesCloud": "Your device data always overwrites the Google Drive backup.",
+  "restoreFromDrive": "Restore from Google Drive",
+  "restoreConfirmTitle": "Restore from Google Drive?",
+  "restoreConfirmMessage": "This replaces all places on this device with the backup from your Google Drive.",
+  "restoreComplete": "Restore complete",
+  "restoreFailed": "Restore failed: {error}",
+  "@restoreFailed": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+
+  "locationPermissionTitle": "Location permission needed",
+  "locationPermissionMessage": "RouteNote needs access to your location to save places.",
+  "locationServicesDisabled": "Please enable location services on your device.",
+  "locationUnavailable": "Could not determine your location. Please try again.",
+  "openAppSettings": "Open settings",
+
+  "errorGeneric": "Something went wrong",
+
+  "about": "About",
+  "aboutDescription": "RouteNote saves your favourite places offline and syncs them to your private Google Drive. Navigation opens in the maps app you already use."
+}
